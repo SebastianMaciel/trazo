@@ -1,6 +1,6 @@
 {
   "name": "trazo",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Code review visual y guiado: el diff como mapa de bloques conectados",
   "type": "module",
   "bin": {
@@ -30,6 +30,7 @@
     "open": "^11.0.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "shiki": "^4.5.0",
     "zustand": "^5.0.16"
   },
   "devDependencies": {

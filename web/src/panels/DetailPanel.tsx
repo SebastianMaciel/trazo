@@ -1,4 +1,5 @@
-import type { Block, Example } from "../../../src/shared/analysis";
+import type { Block, Example, HunkView } from "../../../src/shared/analysis";
+import { Code, useTokens } from "../highlight";
 import { useReview, useVisible } from "../store";
 
 export function DetailPanel() {
@@ -55,17 +56,7 @@ function BlockDetail({ block }: { block: Block }) {
       {block.example && <ExampleFlow ex={block.example} />}
 
       {block.hunks.map((h, i) => (
-        <div key={i} className="code">
-          <div className="code-head">{h.section || h.file}</div>
-          {h.lines.map((l, j) => (
-            <div key={j} className={`line ${l.kind}`}>
-              <span className="no">{l.oldNo ?? ""}</span>
-              <span className="no">{l.newNo ?? ""}</span>
-              <span className="mark">{l.kind === "add" ? "+" : l.kind === "del" ? "−" : ""}</span>
-              <code>{l.text}</code>
-            </div>
-          ))}
-        </div>
+        <Snippet key={i} hunk={h} />
       ))}
 
       {(incoming.length > 0 || outgoing.length > 0) && (
@@ -133,5 +124,26 @@ function ExampleFlow({ ex }: { ex: Example }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Solo las líneas que cambiaron. Un click abre el diff completo en el panel de al lado */
+function Snippet({ hunk }: { hunk: HunkView }) {
+  const { codeOpen, setCodeOpen } = useReview();
+  const changed = hunk.lines.filter((l) => l.kind !== "ctx");
+  const shown = changed.slice(0, 5);
+  const tokens = useTokens(hunk.file, shown.map((l) => l.text));
+  return (
+    <button className={`snippet ${codeOpen ? "is-open" : ""}`} onClick={() => setCodeOpen(!codeOpen)}>
+      {shown.map((l, i) => (
+        <div key={i} className={`snip-line ${l.kind}`}>
+          <Code tokens={tokens?.[i]} text={l.text.trim()} />
+        </div>
+      ))}
+      <div className="snip-foot">
+        {changed.length > shown.length ? `+${changed.length - shown.length} ${changed.length - shown.length === 1 ? "línea" : "líneas"} · ` : ""}
+        {codeOpen ? "Cerrar código" : "Ver código completo →"}
+      </div>
+    </button>
   );
 }

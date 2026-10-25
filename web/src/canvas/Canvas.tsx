@@ -82,6 +82,7 @@ export function Canvas() {
 
   // La cámara encuadra en el hueco libre entre los paneles flotantes, no en el centro de la pantalla
   const showIndex = useReview((s) => s.show.index);
+  const codeOpen = useReview((s) => s.codeOpen);
   useEffect(() => {
     if (!layout) return;
     requestAnimationFrame(() => {
@@ -93,7 +94,8 @@ export function Canvas() {
       if (!rects.length) return;
       const el = document.querySelector(".canvas")!;
       const panel = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0;
-      const left = panel(".detail") + 24;
+      const code = panel(".codepanel");
+      const left = panel(".detail") + (code ? code + 10 : 0) + 24;
       const right = showIndex ? panel(".sidebar") + 24 : 0;
       const view = { x: left, y: 0, w: el.clientWidth - left - right, h: el.clientHeight };
       const pad = selected ? 80 : 120;
@@ -119,7 +121,7 @@ export function Canvas() {
       flow.setCenter(cx + dx, cy, { zoom, duration: 750 });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flyTick, layout, showIndex]);
+  }, [flyTick, layout, showIndex, codeOpen]);
 
   return (
     <ReactFlow

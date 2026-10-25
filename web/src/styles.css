@@ -30,13 +30,14 @@ html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; }
 .mono { font-family: var(--mono); }
+code, .mono, .line, .snippet { font-variant-ligatures: none; }
 
 .app { display: flex; flex-direction: column; height: 100%; }
 .workspace { flex: 1; position: relative; min-height: 0; }
 .canvas { position: absolute; inset: 0; }
 
 /* Paneles flotantes */
-.sidebar, .detail {
+.sidebar, .detail, .codepanel {
   position: absolute; top: 14px; max-height: calc(100% - 28px); z-index: 5;
   background: rgba(13, 20, 40, 0.86); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--line-2); border-radius: 16px;
@@ -314,3 +315,28 @@ button { font: inherit; color: inherit; }
 }
 .start-tag::after { content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -6px; border: 6px solid transparent; border-bottom-color: var(--accent); }
 .block.is-far .start-tag { font-size: 40px; padding: 12px 24px; border-radius: 16px; }
+
+/* ---------- fragmento mínimo en el detalle ---------- */
+.snippet {
+  display: block; width: 100%; text-align: left; cursor: pointer; margin-bottom: 16px; padding: 10px 0 0;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font: 12.5px/1.7 var(--mono);
+  transition: border-color 0.15s;
+}
+.snippet:hover, .snippet.is-open { border-color: var(--accent); }
+.snip-line { padding: 0 14px; border-left: 3px solid transparent; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.snip-line.add { border-left-color: var(--add); background: var(--add-bg); }
+.snip-line.del { border-left-color: var(--del); background: var(--del-bg); }
+.snip-line.del code { opacity: 0.7; text-decoration: line-through; text-decoration-color: rgba(251, 113, 133, 0.5); }
+.snip-foot { margin-top: 8px; padding: 7px 14px; border-top: 1px solid var(--line); color: var(--muted); font: 12px var(--sans); }
+.snippet:hover .snip-foot, .snippet.is-open .snip-foot { color: var(--accent); }
+
+/* ---------- panel de código completo, pegado al detalle ---------- */
+.codepanel { left: calc(14px + 430px + 10px); width: min(640px, calc(100% - 480px)); display: flex; flex-direction: column; overflow: hidden; animation: float-in-code 0.22s ease; }
+@keyframes float-in-code { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+.codepanel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+.codepanel-title { font-size: 16px; font-weight: 600; }
+.codepanel-file { font-size: 12px; color: var(--muted); }
+.codepanel-body { overflow: auto; padding: 14px; }
+.codepanel .code { font-size: 13px; }
+.codepanel .line { grid-template-columns: 38px 38px 18px 1fr; }
+.codepanel .line code { overflow: visible; }

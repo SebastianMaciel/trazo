@@ -14,11 +14,14 @@ interface ReviewState {
   selected: string | null;
   checked: Record<string, boolean>;
   show: Show;
+  /** Panel de código completo, pegado al de detalle */
+  codeOpen: boolean;
   /** Contador que sube cada vez que hay que mover la cámara (aunque se repita el bloque) */
   flyTick: number;
   select: (id: string | null, fly?: boolean) => void;
   toggleCheck: (id: string) => void;
   toggleShow: (key: keyof Show) => void;
+  setCodeOpen: (open: boolean) => void;
   tourStep: (dir: 1 | -1) => void;
 }
 
@@ -68,14 +71,16 @@ export const useReview = create<ReviewState>((set, get) => ({
   selected: null,
   checked: load(`${BASE_KEY}:checked`, {}),
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
+  codeOpen: false,
   flyTick: 0,
+  setCodeOpen: (codeOpen) => set((s) => ({ codeOpen, flyTick: s.flyTick + 1 })),
   select: (id, fly = true) => {
     const { analysis, show } = get();
     // Si navegás a algo escondido, se prende su capa
     const block = id ? analysis.blocks.find((b) => b.id === id) : undefined;
     const layer = block ? layerOf(analysis, block) : null;
     if (layer && !show[layer]) get().toggleShow(layer);
-    set((s) => ({ selected: id, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
+    set((s) => ({ selected: id, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
   toggleCheck: (id) => {
     const checked = { ...get().checked, [id]: !get().checked[id] };
