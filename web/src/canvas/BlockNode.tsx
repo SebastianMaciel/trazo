@@ -3,6 +3,8 @@ import type { Block, RowChange } from "../../../src/shared/analysis";
 
 export type BlockNodeData = {
   block: Block;
+  /** Posición en el recorrido, 0 si no está */
+  step: number;
   selected: boolean;
   dimmed: boolean;
   checked: boolean;
@@ -21,7 +23,7 @@ const KIND_LABEL: Record<Block["kind"], string> = {
 const CHANGE_MARK: Record<RowChange, string> = { added: "+", modified: "~", deleted: "−", affected: "·" };
 
 export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
-  const { block, selected, dimmed, checked } = data;
+  const { block, step, selected, dimmed, checked } = data;
   const far = useStore((s) => s.transform[2] < 0.45);
 
   const cls = ["block", far && "is-far", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", checked && "is-checked", block.affected && "is-affected"]
@@ -30,6 +32,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
   return (
     <div className={cls}>
+      {step > 0 && <span className="step">{step}</span>}
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />
 

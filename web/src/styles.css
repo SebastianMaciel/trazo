@@ -181,7 +181,7 @@ button { font: inherit; color: inherit; }
 .h-card { top: 24px !important; }
 
 /* ---------- canvas: flechas ---------- */
-.react-flow__edge-path.flow { stroke: #5d6f9e; stroke-width: 1.6; transition: stroke 0.25s, opacity 0.3s; }
+.react-flow__edge-path.flow { vector-effect: non-scaling-stroke; stroke: #6c7fb3; stroke-width: 1.6; transition: stroke 0.25s, opacity 0.3s; }
 .react-flow__edge-path.flow-testea { stroke-dasharray: 5 5; }
 .react-flow__edge-path.flow.is-active { stroke: var(--accent); stroke-width: 2.4; filter: drop-shadow(0 0 6px var(--accent-glow)); }
 .react-flow__edge-path.flow.is-dimmed { opacity: 0.3; }
@@ -263,3 +263,12 @@ button { font: inherit; color: inherit; }
 
 .actions { display: flex; gap: 10px; position: sticky; bottom: 0; padding-top: 12px; background: linear-gradient(transparent, var(--bg-2) 30%); }
 .actions .btn { flex: 1; }
+
+.step {
+  position: absolute; top: -13px; left: -13px; z-index: 2; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font: 700 13px var(--mono);
+  background: var(--bg); color: var(--muted); border: 1.5px solid var(--line-2);
+}
+.block.is-selected .step { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.block.is-checked .step { background: var(--add); color: #062312; border-color: var(--add); }
+.block.is-far .step { width: 64px; height: 64px; top: -30px; left: -30px; font-size: 30px; border-width: 3px; }

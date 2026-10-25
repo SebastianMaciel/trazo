@@ -1,4 +1,4 @@
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, useStore, type Edge, type EdgeProps } from "@xyflow/react";
 import type { Edge as AEdge } from "../../../src/shared/analysis";
 
 export type FlowEdgeData = { edge: AEdge; active: boolean; dimmed: boolean };
@@ -7,6 +7,7 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd } = props;
   const [path, lx, ly] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.35 });
   const e = data!.edge;
+  const far = useStore((s) => s.transform[2] < 0.45);
   const cls = `flow flow-${e.kind} ${data!.active ? "is-active" : ""} ${data!.dimmed ? "is-dimmed" : ""}`;
 
   return (
@@ -18,7 +19,7 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
             <animateMotion dur="1.8s" begin={`${begin}s`} repeatCount="indefinite" path={path} />
           </circle>
         ))}
-      <EdgeLabelRenderer>
+      {!far && <EdgeLabelRenderer>
         <div
           className={`edge-label ${data!.active ? "is-active" : ""} ${data!.dimmed ? "is-dimmed" : ""}`}
           style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
@@ -26,7 +27,7 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
         >
           {e.label}
         </div>
-      </EdgeLabelRenderer>
+      </EdgeLabelRenderer>}
     </>
   );
 }

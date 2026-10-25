@@ -39,7 +39,8 @@ export async function layoutAnalysis(a: Analysis): Promise<Layout> {
       layoutOptions: { "elk.padding": "[top=100,left=32,bottom=32,right=32]" },
       children: a.blocks.filter((b) => b.group === g.id).map((b) => ({ id: b.id, width: BLOCK_W, height: blockHeight(b) })),
     })),
-    edges: a.edges.map((e) => ({ id: e.id, sources: [e.from], targets: [e.to] })),
+    // Las flechas de test van al revés para el layout: así los tests quedan después del código que prueban
+    edges: a.edges.map((e) => (e.kind === "testea" ? { id: e.id, sources: [e.to], targets: [e.from] } : { id: e.id, sources: [e.from], targets: [e.to] })),
   };
 
   const res = await elk.layout(graph);

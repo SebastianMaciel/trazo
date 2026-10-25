@@ -48,7 +48,7 @@ export function Canvas() {
         height: p.h,
         draggable: false,
         zIndex: 1,
-        data: { block: b, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), checked: !!checked[b.id] },
+        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), checked: !!checked[b.id] },
       };
     });
     return [...groups, ...blocks];
@@ -77,15 +77,26 @@ export function Canvas() {
   useEffect(() => {
     if (!layout) return;
     if (!selected) {
-      flow.fitView({ duration: 700, padding: 0.12 });
+      requestAnimationFrame(() => flow.fitView({ duration: 700, padding: 0.08 }));
       return;
     }
-    const n = flow.getInternalNode(selected);
-    if (!n) return;
-    const { x, y } = n.internals.positionAbsolute;
-    const w = n.measured.width ?? 320;
-    const h = n.measured.height ?? 120;
-    flow.setCenter(x + w / 2, y + h / 2, { zoom: Math.max(flow.getZoom(), 0.95), duration: 750 });
+    // Si el bloque y sus vecinos entran a un zoom legible, los encuadra a todos. Si no, centra el bloque.
+    const rects = [...neighbors(analysis, selected)]
+      .map((id) => flow.getInternalNode(id))
+      .filter((n) => !!n)
+      .map((n) => ({ ...n.internals.positionAbsolute, w: n.measured.width ?? 320, h: n.measured.height ?? 120, id: n.id }));
+    const minX = Math.min(...rects.map((r) => r.x));
+    const minY = Math.min(...rects.map((r) => r.y));
+    const maxX = Math.max(...rects.map((r) => r.x + r.w));
+    const maxY = Math.max(...rects.map((r) => r.y + r.h));
+    const el = document.querySelector(".canvas")!;
+    const fitZoom = Math.min(el.clientWidth / (maxX - minX + 160), el.clientHeight / (maxY - minY + 160));
+    if (fitZoom >= 0.7) {
+      flow.fitView({ nodes: rects.map(({ id }) => ({ id })), duration: 750, padding: 0.15, maxZoom: 1 });
+    } else {
+      const me = rects.find((r) => r.id === selected)!;
+      flow.setCenter(me.x + me.w / 2, me.y + me.h / 2, { zoom: 0.9, duration: 750 });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyTick, layout]);
 
