@@ -28,13 +28,13 @@ export function Canvas() {
   }, [analysis]);
 
   const focus = useMemo(() => neighbors(analysis, selected), [analysis, selected]);
-  const steps = useMemo(() => (layout ? computeSteps(analysis, layout) : null), [analysis, layout]);
+  const steps = useMemo(() => computeSteps(analysis), [analysis]);
   const setTourOrder = useReview((s) => s.setTourOrder);
   useEffect(() => {
     if (steps && steps.order.join() !== useReview.getState().tourOrder.join()) setTourOrder(steps.order);
   }, [steps, setTourOrder]);
   // Por dónde seguir: el primer bloque del recorrido que todavía no cerraste
-  const tour = steps?.order ?? analysis.tour;
+  const tour = steps.order;
   const next = tour.find((id) => !verdicts[id]);
   const resumed = !!next && next !== tour[0];
 
@@ -66,7 +66,7 @@ export function Canvas() {
         height: p.h,
         draggable: false,
         zIndex: 1,
-        data: { block: b, step: steps?.labels[b.id] ?? null, start: !selected && next === b.id ? (resumed ? "Seguí acá" : "Empezá acá") : null, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), verdict: verdicts[b.id] },
+        data: { block: b, step: steps.labels[b.id] ?? null, start: !selected && next === b.id ? (resumed ? "Seguí acá" : "Empezá acá") : null, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), verdict: verdicts[b.id] },
       };
     });
     return [...groups, ...blocks];

@@ -1,5 +1,4 @@
 import type { Analysis } from "../../src/shared/analysis";
-import type { Layout } from "./layout";
 
 export interface Steps {
   /** Número de cada bloque: 1, 2, 3, 4, 5a, 5b… */
@@ -9,13 +8,13 @@ export interface Steps {
 }
 
 /**
- * Numeración según el flujo, no según el orden en que la AI listó los bloques.
- * Nivel = camino más largo desde un bloque sin entradas. Los del mismo nivel van en
- * paralelo: llevan letra y se ordenan de arriba hacia abajo como quedaron dibujados,
- * así el número, la posición en el mapa y el recorrido dicen lo mismo.
- * Los bloques sin flujo (tests, textos) van al final en el orden original.
+ * Numeración: el flujo pone la regla dura y la AI decide el resto.
+ * Nivel = camino más largo desde un bloque sin entradas, así nada aparece antes de lo
+ * que le pasa datos. Los del mismo nivel van en paralelo y llevan letra; entre ellos
+ * manda el orden del recorrido de la AI (por ejemplo, lo más riesgoso primero).
+ * Los bloques sin flujo (tests, textos) van al final en el orden de la AI.
  */
-export function computeSteps(a: Analysis, layout: Layout): Steps {
+export function computeSteps(a: Analysis): Steps {
   const flow = a.edges.filter((e) => e.kind !== "testea");
   const inFlow = new Set(flow.flatMap((e) => [e.from, e.to]));
   const level: Record<string, number> = {};
@@ -30,11 +29,6 @@ export function computeSteps(a: Analysis, layout: Layout): Steps {
     return level[id];
   };
 
-  const y = (id: string) => {
-    const b = a.blocks.find((x) => x.id === id);
-    return (b ? (layout.groups[b.group]?.y ?? 0) : 0) + (layout.blocks[id]?.y ?? 0);
-  };
-
   const byLevel = new Map<number, string[]>();
   for (const id of a.tour.filter((id) => inFlow.has(id))) {
     const l = visit(id);
@@ -46,7 +40,7 @@ export function computeSteps(a: Analysis, layout: Layout): Steps {
   let n = 0;
   for (const l of [...byLevel.keys()].sort((p, q) => p - q)) {
     n = l;
-    const ids = byLevel.get(l)!.sort((p, q) => y(p) - y(q));
+    const ids = byLevel.get(l)!; // ya vienen en el orden de la AI
     ids.forEach((id, i) => {
       labels[id] = ids.length > 1 ? `${l}${String.fromCharCode(97 + i)}` : `${l}`;
       order.push(id);
