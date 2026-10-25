@@ -37,12 +37,9 @@ function Overview() {
 }
 
 function BlockDetail({ block }: { block: Block }) {
-  const { analysis, verdicts, setVerdict, tourStep, select } = useReview();
+  const { verdicts, setVerdict, tourStep } = useReview();
   const tour = useVisible().tour;
   const verdict = verdicts[block.id];
-  const incoming = analysis.edges.filter((e) => e.to === block.id);
-  const outgoing = analysis.edges.filter((e) => e.from === block.id);
-  const name = (id: string) => analysis.blocks.find((b) => b.id === id)?.title ?? id;
   const pos = tour.indexOf(block.id);
 
   return (
@@ -65,27 +62,6 @@ function BlockDetail({ block }: { block: Block }) {
       {block.hunks.map((h, i) => (
         <Snippet key={i} hunk={h} />
       ))}
-
-      {(incoming.length > 0 || outgoing.length > 0) && (
-        <div className="links">
-          {incoming.map((e) => (
-            <button key={e.id} className="link" onClick={() => select(e.from)}>
-              <span className="link-dir">desde</span>
-              <span className="mono">{name(e.from)}</span>
-              <span className="link-label">{e.label}</span>
-              <span className="link-ev">{e.evidence}</span>
-            </button>
-          ))}
-          {outgoing.map((e) => (
-            <button key={e.id} className="link" onClick={() => select(e.to)}>
-              <span className="link-dir">hacia</span>
-              <span className="mono">{name(e.to)}</span>
-              <span className="link-label">{e.label}</span>
-              <span className="link-ev">{e.evidence}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Cerrar el bloque es una decisión, separada de moverse */}
       <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
