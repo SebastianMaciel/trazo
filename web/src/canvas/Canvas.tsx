@@ -1,7 +1,8 @@
 import { Background, BackgroundVariant, MarkerType, MiniMap, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
-import { neighbors, useReview, useVisible } from "../store";
+import { neighbors, useReview, visibleAnalysis } from "../store";
 import { layoutAnalysis, type Layout } from "../layout";
+import { computeSteps } from "../steps";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import { GroupNode, type GroupNodeData } from "./GroupNode";
@@ -11,8 +12,10 @@ const nodeTypes = { block: BlockNode, cluster: GroupNode };
 const edgeTypes = { flow: FlowEdge };
 
 export function Canvas() {
-  const { selected, verdicts, flyTick, select } = useReview();
-  const analysis = useVisible();
+  const { selected, verdicts, flyTick, select, show } = useReview();
+  const raw = useReview((s) => s.analysis);
+  // El dibujo sale del análisis base: el orden del recorrido se deriva de él, no al revés
+  const analysis = useMemo(() => visibleAnalysis(raw, show), [raw, show]);
   const [layout, setLayout] = useState<Layout | null>(null);
   const flow = useReactFlow();
 
@@ -25,9 +28,15 @@ export function Canvas() {
   }, [analysis]);
 
   const focus = useMemo(() => neighbors(analysis, selected), [analysis, selected]);
+  const steps = useMemo(() => (layout ? computeSteps(analysis, layout) : null), [analysis, layout]);
+  const setTourOrder = useReview((s) => s.setTourOrder);
+  useEffect(() => {
+    if (steps && steps.order.join() !== useReview.getState().tourOrder.join()) setTourOrder(steps.order);
+  }, [steps, setTourOrder]);
   // Por dónde seguir: el primer bloque del recorrido que todavía no cerraste
-  const next = analysis.tour.find((id) => !verdicts[id]);
-  const resumed = next !== analysis.tour[0];
+  const tour = steps?.order ?? analysis.tour;
+  const next = tour.find((id) => !verdicts[id]);
+  const resumed = !!next && next !== tour[0];
 
   const nodes = useMemo<Node[]>(() => {
     if (!layout) return [];
@@ -57,11 +66,11 @@ export function Canvas() {
         height: p.h,
         draggable: false,
         zIndex: 1,
-        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, start: !selected && next === b.id ? (resumed ? "Seguí acá" : "Empezá acá") : null, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), verdict: verdicts[b.id] },
+        data: { block: b, step: steps?.labels[b.id] ?? null, start: !selected && next === b.id ? (resumed ? "Seguí acá" : "Empezá acá") : null, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), verdict: verdicts[b.id] },
       };
     });
     return [...groups, ...blocks];
-  }, [layout, analysis, selected, verdicts, focus]);
+  }, [layout, analysis, selected, verdicts, focus, steps]);
 
   const edges = useMemo<Edge<FlowEdgeData>[]>(
     () =>

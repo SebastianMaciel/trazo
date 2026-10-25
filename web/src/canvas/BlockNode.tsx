@@ -6,8 +6,8 @@ import { FAR_ZOOM } from "../layout";
 
 export type BlockNodeData = {
   block: Block;
-  /** Posición en el recorrido, 0 si no está */
-  step: number;
+  /** Número según el flujo (5a, 5b si van en paralelo) */
+  step: string | null;
   /** Primer paso del recorrido, cuando no hay nada seleccionado */
   start: string | null;
   selected: boolean;
@@ -38,7 +38,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   return (
     <div className={cls}>
       {start && <span className="start-tag">{start}</span>}
-      {step > 0 && <span className="step">{step}</span>}
+      {step && <span className={`step ${step.length > 1 && /[a-z]$/.test(step) ? "is-branch" : ""}`}>{step}</span>}
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />
 

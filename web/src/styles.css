@@ -366,3 +366,5 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .step-seg.is-current { height: 6px; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text); }
 .stepper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stepper-btns .btn { min-height: 46px; font-size: 15px; }
+.step.is-branch { width: auto; min-width: 26px; padding: 0 7px; border-radius: 13px; }
+.block.is-far .step.is-branch { min-width: 64px; padding: 0 14px; border-radius: 32px; }

@@ -16,6 +16,9 @@ interface ReviewState {
   selected: string | null;
   verdicts: Record<string, Verdict>;
   show: Show;
+  /** Orden del recorrido según el flujo dibujado (lo calcula el canvas después del layout) */
+  tourOrder: string[];
+  setTourOrder: (order: string[]) => void;
   /** Panel de código completo, pegado al de detalle */
   codeOpen: boolean;
   /** Contador que sube cada vez que hay que mover la cámara (aunque se repita el bloque) */
@@ -54,7 +57,7 @@ export function layerOf(a: Analysis, b: Block): Layer | null {
 }
 
 /** El análisis recortado a lo que está prendido */
-export function visibleAnalysis(a: Analysis, show: Show): Analysis {
+export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = []): Analysis {
   const blocks = a.blocks.filter((b) => {
     const layer = layerOf(a, b);
     return !layer || show[layer];
@@ -65,7 +68,9 @@ export function visibleAnalysis(a: Analysis, show: Show): Analysis {
     blocks,
     groups: a.groups.filter((g) => blocks.some((b) => b.group === g.id)),
     edges: a.edges.filter((e) => ids.has(e.from) && ids.has(e.to)),
-    tour: a.tour.filter((id) => ids.has(id)),
+    tour: tourOrder.length
+      ? [...a.tour.filter((id) => ids.has(id))].sort((p, q) => rank(tourOrder, p) - rank(tourOrder, q))
+      : a.tour.filter((id) => ids.has(id)),
   };
 }
 
@@ -75,6 +80,8 @@ export const useReview = create<ReviewState>((set, get) => ({
   verdicts: load<Record<string, Verdict>>(`${BASE_KEY}:verdicts`, {}),
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   codeOpen: false,
+  tourOrder: [],
+  setTourOrder: (tourOrder) => set({ tourOrder }),
   flyTick: 0,
   setCodeOpen: (codeOpen) => set((s) => ({ codeOpen, flyTick: s.flyTick + 1 })),
   select: (id, fly = true) => {
@@ -101,8 +108,8 @@ export const useReview = create<ReviewState>((set, get) => ({
     save(`trazo:show`, show);
   },
   tourStep: (dir) => {
-    const { analysis, show, selected } = get();
-    const tour = visibleAnalysis(analysis, show).tour;
+    const { analysis, show, selected, tourOrder } = get();
+    const tour = visibleAnalysis(analysis, show, tourOrder).tour;
     const i = selected ? tour.indexOf(selected) : -1;
     const next = Math.min(tour.length - 1, Math.max(0, i + dir));
     get().select(tour[i === -1 ? 0 : next]);
@@ -110,12 +117,16 @@ export const useReview = create<ReviewState>((set, get) => ({
 }));
 
 /** Selector para los componentes: el análisis visible, memoizado por referencia */
-let cache: { a: Analysis; show: Show; out: Analysis } | null = null;
+let cache: { a: Analysis; show: Show; order: string[]; out: Analysis } | null = null;
 export function useVisible(): Analysis {
-  const { analysis, show } = useReview();
-  if (!cache || cache.a !== analysis || cache.show !== show) cache = { a: analysis, show, out: visibleAnalysis(analysis, show) };
+  const { analysis, show, tourOrder } = useReview();
+  if (!cache || cache.a !== analysis || cache.show !== show || cache.order !== tourOrder)
+    cache = { a: analysis, show, order: tourOrder, out: visibleAnalysis(analysis, show, tourOrder) };
   return cache.out;
 }
+
+/** Los que no están en el orden calculado (recién prendidos) van al final */
+const rank = (order: string[], id: string) => (order.includes(id) ? order.indexOf(id) : order.length);
 
 export function neighbors(analysis: Analysis, id: string | null): Set<string> {
   const out = new Set<string>();

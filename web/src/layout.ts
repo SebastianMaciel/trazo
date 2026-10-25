@@ -74,6 +74,8 @@ const SPACING = {
 };
 
 export async function layoutAnalysis(a: Analysis): Promise<Layout> {
+  // Los hijos van en el orden del recorrido y ELK lo respeta: las ramas paralelas se leen de arriba hacia abajo
+  const order = (id: string) => (a.tour.includes(id) ? a.tour.indexOf(id) : Infinity);
   const graph: ElkNode = {
     id: "root",
     layoutOptions: {
@@ -91,6 +93,7 @@ export async function layoutAnalysis(a: Analysis): Promise<Layout> {
       layoutOptions: { ...SPACING, "elk.padding": "[top=120,left=56,bottom=56,right=56]" },
       children: a.blocks
         .filter((b) => b.group === g.id)
+        .sort((x, y) => order(x.id) - order(y.id))
         .map((b) => ({ id: b.id, width: BLOCK_W, height: blockHeight(b), ports: ports(b), layoutOptions: { "elk.portConstraints": "FIXED_POS" } })),
     })),
     edges: a.edges.map((e) => {
