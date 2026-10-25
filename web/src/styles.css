@@ -349,13 +349,6 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .verdict-btn.doubt.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .verdict-btn.is-on .verdict-icon { background: rgba(0, 0, 0, 0.15); border-color: transparent; }
 
-.stepper {
-  position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px;
-  padding: 12px 0 2px; background: linear-gradient(transparent, rgba(13, 20, 40, 0.97) 25%);
-}
-.stepper .btn { min-height: 42px; }
-.stepper .btn:last-child { justify-self: end; }
-.stepper-pos { font: 13px var(--mono); color: var(--muted); text-align: center; }
 
 .progress-bar { display: flex; }
 .progress-bar .pb-ok { background: var(--add); height: 100%; transition: width 0.4s ease; }
@@ -363,3 +356,12 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .doubts { color: var(--accent); }
 .topbar-progress .progress-bar { width: 110px; }
 .all-done { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--add-bg); color: var(--add); font-weight: 600; }
+
+.stepper { position: sticky; bottom: 0; padding: 14px 0 2px; background: linear-gradient(transparent, rgba(13, 20, 40, 0.97) 20%); }
+.steps { display: flex; gap: 4px; margin-bottom: 12px; }
+.step-seg { flex: 1; height: 6px; border-radius: 3px; background: var(--line-2); transition: background 0.25s, height 0.2s; }
+.step-seg.is-ok { background: var(--add); }
+.step-seg.is-doubt { background: var(--accent); }
+.step-seg.is-current { height: 6px; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text); }
+.stepper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stepper-btns .btn { min-height: 46px; font-size: 15px; }

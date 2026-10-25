@@ -79,13 +79,20 @@ function BlockDetail({ block }: { block: Block }) {
       </section>
 
       <nav className="stepper">
-        <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
-          ← Anterior
-        </button>
-        <span className="stepper-pos">{pos === -1 ? "fuera del recorrido" : `${pos + 1} / ${tour.length}`}</span>
-        <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
-          Siguiente →
-        </button>
+        {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
+        <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
+          {tour.map((id, i) => (
+            <span key={id} className={`step-seg ${verdicts[id] ? `is-${verdicts[id]}` : ""} ${i === pos ? "is-current" : ""}`} />
+          ))}
+        </div>
+        <div className="stepper-btns">
+          <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
+            ← Anterior
+          </button>
+          <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
+            Siguiente →
+          </button>
+        </div>
       </nav>
     </div>
   );
