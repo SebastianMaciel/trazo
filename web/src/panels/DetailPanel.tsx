@@ -8,16 +8,17 @@ export function DetailPanel() {
   const decision = analysis.decisions.find((d) => d.id === selected);
   return (
     <aside className="detail">
-      {block ? <BlockDetail block={block} /> : decision ? <DecisionDetail decision={decision} /> : <Overview />}
+      {/* Arriba scrollea el contenido; los botones quedan siempre en el mismo lugar, abajo de todo */}
+      <div className="detail-scroll">
+        {block ? <BlockDetail block={block} /> : decision ? <DecisionDetail decision={decision} /> : <Overview />}
+      </div>
+      {block || decision ? <Stepper id={selected!} /> : <StartFoot />}
     </aside>
   );
 }
 
 function Overview() {
-  const { tourStep, verdicts, select } = useReview();
   const analysis = useVisible();
-  const next = analysis.tour.find((id) => !verdicts[id]);
-  const resumed = next !== analysis.tour[0];
   return (
     <div className="detail-inner">
       <p className="eyebrow">El cambio</p>
@@ -30,14 +31,26 @@ function Overview() {
           </li>
         ))}
       </ol>
+    </div>
+  );
+}
+
+function StartFoot() {
+  const { tourStep, verdicts, select } = useReview();
+  const tour = useVisible().tour;
+  const next = tour.find((id) => !verdicts[id]);
+  const resumed = next !== tour[0];
+  return (
+    <nav className="stepper">
       {next ? (
         <button className="btn btn-primary btn-big btn-wide" onClick={() => (resumed ? select(next) : tourStep(1))}>
-          {resumed ? "Seguir el recorrido →" : "Empezar el recorrido →"}
+          {resumed ? "Seguir el recorrido" : "Empezar el recorrido"}
+          <kbd>→</kbd>
         </button>
       ) : (
         <p className="all-done">Cerraste todos los bloques.</p>
       )}
-    </div>
+    </nav>
   );
 }
 
@@ -175,42 +188,48 @@ function DecisionDetail({ decision: d }: { decision: Decision }) {
 
 /** Cerrar un paso es una decisión explícita, separada de moverse por el recorrido */
 function Closing({ id, question }: { id: string; question: string }) {
-  const { verdicts, setVerdict, tourStep } = useReview();
-  const tour = useVisible().tour;
+  const { verdicts, setVerdict } = useReview();
   const verdict = verdicts[id];
+  return (
+    <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
+      <p className="verdict-q">{question}</p>
+      <div className="verdict-options">
+        <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(id, "ok")} aria-pressed={verdict === "ok"}>
+          <span className="verdict-icon">✓</span>
+          Lo entendí
+        </button>
+        <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(id, "doubt")} aria-pressed={verdict === "doubt"}>
+          <span className="verdict-icon">?</span>
+          Tengo dudas
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** Moverse por el recorrido. También con las flechas del teclado */
+function Stepper({ id }: { id: string }) {
+  const { verdicts, tourStep } = useReview();
+  const tour = useVisible().tour;
   const pos = tour.indexOf(id);
   return (
-    <>
-      <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
-        <p className="verdict-q">{question}</p>
-        <div className="verdict-options">
-          <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(id, "ok")} aria-pressed={verdict === "ok"}>
-            <span className="verdict-icon">✓</span>
-            Lo entendí
-          </button>
-          <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(id, "doubt")} aria-pressed={verdict === "doubt"}>
-            <span className="verdict-icon">?</span>
-            Tengo dudas
-          </button>
-        </div>
-      </section>
-
-      <nav className="stepper">
-        {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
-        <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
-          {tour.map((t, i) => (
-            <span key={t} className={`step-seg ${verdicts[t] ? `is-${verdicts[t]}` : ""} ${i === pos ? "is-current" : ""}`} />
-          ))}
-        </div>
-        <div className="stepper-btns">
-          <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
-            ← Anterior
-          </button>
-          <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
-            Siguiente →
-          </button>
-        </div>
-      </nav>
-    </>
+    <nav className="stepper">
+      {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
+      <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
+        {tour.map((t, i) => (
+          <span key={t} className={`step-seg ${verdicts[t] ? `is-${verdicts[t]}` : ""} ${i === pos ? "is-current" : ""}`} />
+        ))}
+      </div>
+      <div className="stepper-btns">
+        <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
+          <kbd>←</kbd>
+          Anterior
+        </button>
+        <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
+          Siguiente
+          <kbd>→</kbd>
+        </button>
+      </div>
+    </nav>
   );
 }

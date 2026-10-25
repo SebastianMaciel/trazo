@@ -43,7 +43,7 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
   border: 1px solid var(--line-2); border-radius: 16px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 }
-.detail { left: 14px; width: 430px; }
+.detail { left: 14px; width: 430px; height: calc(100% - 28px); display: flex; flex-direction: column; overflow: hidden; }
 .sidebar { right: 14px; width: 270px; animation: float-in-right 0.25s ease; }
 @keyframes float-in-right { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
 
@@ -205,7 +205,7 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .workspace.with-index .react-flow__minimap { right: 298px; }
 
 /* ---------- panel de detalle ---------- */
-.detail { overflow: auto; }
+.detail-scroll { flex: 1; min-height: 0; overflow: auto; }
 .detail-inner { padding: 28px 28px 24px; animation: slide-in 0.3s ease; }
 @keyframes slide-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
 .eyebrow { margin: 0 0 10px; font: 12px var(--mono); color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -358,7 +358,12 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .topbar-progress .progress-bar { width: 110px; }
 .all-done { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--add-bg); color: var(--add); font-weight: 600; }
 
-.stepper { position: sticky; bottom: -24px; margin: 22px -28px -24px; padding: 18px 28px 24px; background: #0d1428; border-top: 1px solid var(--line); }
+.stepper { flex: none; padding: 18px 28px 24px; border-top: 1px solid var(--line); }
+.stepper .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn kbd {
+  font: 600 12px var(--mono); min-width: 22px; height: 22px; padding: 0 5px; display: inline-grid; place-items: center;
+  border: 1px solid currentColor; border-radius: 5px; opacity: 0.7; margin: 0 2px;
+}
 .steps { display: flex; gap: 5px; margin-bottom: 16px; }
 .step-seg { flex: 1; height: 6px; border-radius: 3px; background: var(--line-2); transition: background 0.25s, height 0.2s; }
 .step-seg.is-ok { background: var(--add); }
