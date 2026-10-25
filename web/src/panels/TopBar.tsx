@@ -9,9 +9,6 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <button className={`btn btn-ghost ${show.index ? "is-on" : ""}`} onClick={() => toggleShow("index")}>
-        ☰ Índice
-      </button>
       <span className="logo">trazo</span>
       <span className="pr-title">{analysis.title}</span>
       <span className="branches">
@@ -52,6 +49,9 @@ export function TopBar() {
           →
         </button>
       </div>
+      <button className={`btn btn-ghost ${show.index ? "is-on" : ""}`} onClick={() => toggleShow("index")}>
+        ☰ Índice
+      </button>
     </header>
   );
 }

@@ -42,9 +42,9 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--line-2); border-radius: 16px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 }
-.sidebar { left: 14px; width: 270px; animation: float-in-left 0.25s ease; }
-.detail { right: 14px; width: 430px; }
-@keyframes float-in-left { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.detail { left: 14px; width: 430px; }
+.sidebar { right: 14px; width: 270px; animation: float-in-right 0.25s ease; }
+@keyframes float-in-right { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
 
 /* ---------- top bar ---------- */
 .topbar {
@@ -205,13 +205,13 @@ button { font: inherit; color: inherit; }
 .edge-label.is-dimmed { opacity: 0.4; }
 
 .minimap { background: var(--bg-2) !important; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.react-flow__minimap { left: 14px; bottom: 0; right: auto !important; transition: left 0.25s; }
-.workspace.with-index .react-flow__minimap { left: 298px; }
+.react-flow__minimap { right: 14px; bottom: 0; transition: right 0.25s; }
+.workspace.with-index .react-flow__minimap { right: 298px; }
 
 /* ---------- panel de detalle ---------- */
 .detail { overflow: auto; }
 .detail-inner { padding: 22px 22px 32px; animation: slide-in 0.3s ease; }
-@keyframes slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
 .eyebrow { margin: 0 0 6px; font: 12px var(--mono); color: var(--muted); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .detail-title { margin: 0 0 10px; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
 .detail-title.mono { font-family: var(--mono); font-size: 24px; }
