@@ -1,6 +1,8 @@
 import { useStore, type Node, type NodeProps } from "@xyflow/react";
 import type { Group } from "../../../src/shared/analysis";
 
+import { FAR_ZOOM } from "../layout";
+
 export type GroupNodeData = { group: Group; done: number; total: number; dimmed: boolean };
 
 export function GroupNode({ data }: NodeProps<Node<GroupNodeData>>) {
@@ -8,7 +10,7 @@ export function GroupNode({ data }: NodeProps<Node<GroupNodeData>>) {
   const zoom = useStore((s) => s.transform[2]);
   // El título mantiene un tamaño legible en pantalla aunque te alejes: es la vista de "intención"
   const size = Math.min(64, Math.max(20, 20 / zoom));
-  const far = zoom < 0.45;
+  const far = zoom < FAR_ZOOM;
 
   return (
     <div className={`group risk-${group.risk} ${group.minor ? "is-minor" : ""} ${dimmed ? "is-dimmed" : ""} ${far ? "is-far" : ""}`}>
@@ -18,7 +20,6 @@ export function GroupNode({ data }: NodeProps<Node<GroupNodeData>>) {
           {done}/{total}
         </span>
       </div>
-      {!far && <p className="group-summary">{group.summary}</p>}
     </div>
   );
 }

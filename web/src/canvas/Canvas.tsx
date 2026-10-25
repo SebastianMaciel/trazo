@@ -1,6 +1,6 @@
 import { Background, BackgroundVariant, MarkerType, MiniMap, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
-import { neighbors, useReview } from "../store";
+import { neighbors, useReview, useVisible } from "../store";
 import { layoutAnalysis, type Layout } from "../layout";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
@@ -10,19 +10,24 @@ const nodeTypes = { block: BlockNode, group: GroupNode };
 const edgeTypes = { flow: FlowEdge };
 
 export function Canvas() {
-  const { analysis, selected, checked, flyTick, select } = useReview();
+  const { selected, checked, flyTick, select } = useReview();
+  const analysis = useVisible();
   const [layout, setLayout] = useState<Layout | null>(null);
   const flow = useReactFlow();
 
   useEffect(() => {
-    layoutAnalysis(analysis).then(setLayout);
+    let alive = true;
+    layoutAnalysis(analysis).then((l) => alive && setLayout(l));
+    return () => {
+      alive = false;
+    };
   }, [analysis]);
 
   const focus = useMemo(() => neighbors(analysis, selected), [analysis, selected]);
 
   const nodes = useMemo<Node[]>(() => {
     if (!layout) return [];
-    const groups: Node<GroupNodeData>[] = analysis.groups.map((g) => {
+    const groups: Node<GroupNodeData>[] = analysis.groups.filter((g) => layout.groups[g.id]).map((g) => {
       const p = layout.groups[g.id];
       const ids = analysis.blocks.filter((b) => b.group === g.id).map((b) => b.id);
       return {
@@ -37,7 +42,7 @@ export function Canvas() {
         data: { group: g, done: ids.filter((id) => checked[id]).length, total: ids.length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
       };
     });
-    const blocks: Node<BlockNodeData>[] = analysis.blocks.map((b) => {
+    const blocks: Node<BlockNodeData>[] = analysis.blocks.filter((b) => layout.blocks[b.id]).map((b) => {
       const p = layout.blocks[b.id];
       return {
         id: b.id,
@@ -48,7 +53,7 @@ export function Canvas() {
         height: p.h,
         draggable: false,
         zIndex: 1,
-        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), checked: !!checked[b.id] },
+        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, start: !selected && analysis.tour[0] === b.id, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), checked: !!checked[b.id] },
       };
     });
     return [...groups, ...blocks];
@@ -75,32 +80,46 @@ export function Canvas() {
     [analysis, selected, layout],
   );
 
-  // La cámara viaja al bloque y lo deja a un zoom donde se lee
+  // La cámara encuadra en el hueco libre entre los paneles flotantes, no en el centro de la pantalla
+  const showIndex = useReview((s) => s.show.index);
   useEffect(() => {
     if (!layout) return;
-    if (!selected) {
-      requestAnimationFrame(() => flow.fitView({ duration: 700, padding: 0.08 }));
-      return;
-    }
-    // Si el bloque y sus vecinos entran a un zoom legible, los encuadra a todos. Si no, centra el bloque.
-    const rects = [...neighbors(analysis, selected)]
-      .map((id) => flow.getInternalNode(id))
-      .filter((n) => !!n)
-      .map((n) => ({ ...n.internals.positionAbsolute, w: n.measured.width ?? 320, h: n.measured.height ?? 120, id: n.id }));
-    const minX = Math.min(...rects.map((r) => r.x));
-    const minY = Math.min(...rects.map((r) => r.y));
-    const maxX = Math.max(...rects.map((r) => r.x + r.w));
-    const maxY = Math.max(...rects.map((r) => r.y + r.h));
-    const el = document.querySelector(".canvas")!;
-    const fitZoom = Math.min(el.clientWidth / (maxX - minX + 160), el.clientHeight / (maxY - minY + 160));
-    if (fitZoom >= 0.7) {
-      flow.fitView({ nodes: rects.map(({ id }) => ({ id })), duration: 750, padding: 0.15, maxZoom: 1 });
-    } else {
-      const me = rects.find((r) => r.id === selected)!;
-      flow.setCenter(me.x + me.w / 2, me.y + me.h / 2, { zoom: 0.9, duration: 750 });
-    }
+    requestAnimationFrame(() => {
+      const ids = selected ? [...neighbors(analysis, selected)] : analysis.blocks.map((b) => b.id);
+      const rects = ids
+        .map((id) => flow.getInternalNode(id))
+        .filter((n) => !!n)
+        .map((n) => ({ ...n.internals.positionAbsolute, w: n.measured.width ?? 320, h: n.measured.height ?? 120, id: n.id }));
+      if (!rects.length) return;
+      const el = document.querySelector(".canvas")!;
+      const panel = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0;
+      const left = showIndex ? panel(".sidebar") + 24 : 0;
+      const right = panel(".detail") + 24;
+      const view = { x: left, y: 0, w: el.clientWidth - left - right, h: el.clientHeight };
+      const pad = selected ? 80 : 120;
+
+      const box = {
+        x: Math.min(...rects.map((r) => r.x)),
+        y: Math.min(...rects.map((r) => r.y)),
+        x2: Math.max(...rects.map((r) => r.x + r.w)),
+        y2: Math.max(...rects.map((r) => r.y + r.h)),
+      };
+      let zoom = Math.min(view.w / (box.x2 - box.x + pad * 2), view.h / (box.y2 - box.y + pad * 2), selected ? 1 : 0.9);
+      let cx = (box.x + box.x2) / 2;
+      let cy = (box.y + box.y2) / 2;
+      // Vecinos muy desparramados: mejor centrar solo el bloque a un zoom que se lea
+      if (selected && zoom < 0.7) {
+        const me = rects.find((r) => r.id === selected)!;
+        zoom = 0.9;
+        cx = me.x + me.w / 2;
+        cy = me.y + me.h / 2;
+      }
+      // setCenter centra en el canvas entero: corro el punto para que caiga en el centro del hueco libre
+      const dx = (el.clientWidth / 2 - (view.x + view.w / 2)) / zoom;
+      flow.setCenter(cx + dx, cy, { zoom, duration: 750 });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flyTick, layout]);
+  }, [flyTick, layout, showIndex]);
 
   return (
     <ReactFlow
@@ -114,7 +133,6 @@ export function Canvas() {
       minZoom={0.08}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
-      fitView
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#24345e" />
       <MiniMap

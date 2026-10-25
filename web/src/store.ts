@@ -1,6 +1,9 @@
 import { create } from "zustand";
-import type { Analysis } from "../../src/shared/analysis";
+import type { Analysis, Block } from "../../src/shared/analysis";
 import { mockAnalysis } from "./mock/conversion-montos";
+
+export type Layer = "tests" | "minor";
+type Show = Record<Layer | "index", boolean>;
 
 /**
  * Estado de la revisión. Está separado de los componentes a propósito:
@@ -10,45 +13,99 @@ interface ReviewState {
   analysis: Analysis;
   selected: string | null;
   checked: Record<string, boolean>;
+  show: Show;
   /** Contador que sube cada vez que hay que mover la cámara (aunque se repita el bloque) */
   flyTick: number;
   select: (id: string | null, fly?: boolean) => void;
   toggleCheck: (id: string) => void;
+  toggleShow: (key: keyof Show) => void;
   tourStep: (dir: 1 | -1) => void;
 }
 
-const KEY = `trazo:checked:${mockAnalysis.base}..${mockAnalysis.head}`;
+const BASE_KEY = `trazo:${mockAnalysis.base}..${mockAnalysis.head}`;
 
-function loadChecked(): Record<string, boolean> {
+function load<T>(key: string, fallback: T): T {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    return { ...fallback, ...JSON.parse(localStorage.getItem(key) ?? "{}") };
   } catch {
-    return {};
+    return fallback;
   }
+}
+
+function save(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* sin storage, dura lo que la pestaña */
+  }
+}
+
+/** A qué capa pertenece un bloque: las capas se pueden esconder, el resto siempre se ve */
+export function layerOf(a: Analysis, b: Block): Layer | null {
+  if (a.groups.find((g) => g.id === b.group)?.minor) return "minor";
+  if (b.kind === "test") return "tests";
+  return null;
+}
+
+/** El análisis recortado a lo que está prendido */
+export function visibleAnalysis(a: Analysis, show: Show): Analysis {
+  const blocks = a.blocks.filter((b) => {
+    const layer = layerOf(a, b);
+    return !layer || show[layer];
+  });
+  const ids = new Set(blocks.map((b) => b.id));
+  return {
+    ...a,
+    blocks,
+    groups: a.groups.filter((g) => blocks.some((b) => b.group === g.id)),
+    edges: a.edges.filter((e) => ids.has(e.from) && ids.has(e.to)),
+    tour: a.tour.filter((id) => ids.has(id)),
+  };
 }
 
 export const useReview = create<ReviewState>((set, get) => ({
   analysis: mockAnalysis,
   selected: null,
-  checked: loadChecked(),
+  checked: load(`${BASE_KEY}:checked`, {}),
+  show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   flyTick: 0,
-  select: (id, fly = true) => set((s) => ({ selected: id, flyTick: fly ? s.flyTick + 1 : s.flyTick })),
+  select: (id, fly = true) => {
+    const { analysis, show } = get();
+    // Si navegás a algo escondido, se prende su capa
+    const block = id ? analysis.blocks.find((b) => b.id === id) : undefined;
+    const layer = block ? layerOf(analysis, block) : null;
+    if (layer && !show[layer]) get().toggleShow(layer);
+    set((s) => ({ selected: id, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
+  },
   toggleCheck: (id) => {
     const checked = { ...get().checked, [id]: !get().checked[id] };
     set({ checked });
-    try {
-      localStorage.setItem(KEY, JSON.stringify(checked));
-    } catch {
-      /* sin storage, los tildes duran lo que la pestaña */
-    }
+    save(`${BASE_KEY}:checked`, checked);
+  },
+  toggleShow: (key) => {
+    const show = { ...get().show, [key]: !get().show[key] };
+    const { selected, analysis } = get();
+    const sel = selected ? analysis.blocks.find((b) => b.id === selected) : undefined;
+    const hidesSelected = sel && layerOf(analysis, sel) === key && !show[key];
+    set({ show, ...(hidesSelected ? { selected: null } : {}) });
+    save(`trazo:show`, show);
   },
   tourStep: (dir) => {
-    const { analysis, selected } = get();
-    const i = selected ? analysis.tour.indexOf(selected) : -1;
-    const next = Math.min(analysis.tour.length - 1, Math.max(0, i + dir));
-    get().select(analysis.tour[i === -1 ? 0 : next]);
+    const { analysis, show, selected } = get();
+    const tour = visibleAnalysis(analysis, show).tour;
+    const i = selected ? tour.indexOf(selected) : -1;
+    const next = Math.min(tour.length - 1, Math.max(0, i + dir));
+    get().select(tour[i === -1 ? 0 : next]);
   },
 }));
+
+/** Selector para los componentes: el análisis visible, memoizado por referencia */
+let cache: { a: Analysis; show: Show; out: Analysis } | null = null;
+export function useVisible(): Analysis {
+  const { analysis, show } = useReview();
+  if (!cache || cache.a !== analysis || cache.show !== show) cache = { a: analysis, show, out: visibleAnalysis(analysis, show) };
+  return cache.out;
+}
 
 export function neighbors(analysis: Analysis, id: string | null): Set<string> {
   const out = new Set<string>();

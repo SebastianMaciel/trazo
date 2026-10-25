@@ -1,10 +1,14 @@
 import { Handle, Position, useStore, type NodeProps, type Node } from "@xyflow/react";
 import type { Block, RowChange } from "../../../src/shared/analysis";
 
+import { FAR_ZOOM } from "../layout";
+
 export type BlockNodeData = {
   block: Block;
   /** Posición en el recorrido, 0 si no está */
   step: number;
+  /** Primer paso del recorrido, cuando no hay nada seleccionado */
+  start: boolean;
   selected: boolean;
   dimmed: boolean;
   checked: boolean;
@@ -23,15 +27,16 @@ const KIND_LABEL: Record<Block["kind"], string> = {
 const CHANGE_MARK: Record<RowChange, string> = { added: "+", modified: "~", deleted: "−", affected: "·" };
 
 export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
-  const { block, step, selected, dimmed, checked } = data;
-  const far = useStore((s) => s.transform[2] < 0.45);
+  const { block, step, start, selected, dimmed, checked } = data;
+  const far = useStore((s) => s.transform[2] < FAR_ZOOM);
 
-  const cls = ["block", far && "is-far", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", checked && "is-checked", block.affected && "is-affected"]
+  const cls = ["block", far && "is-far", start && "is-start", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", checked && "is-checked", block.affected && "is-affected"]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div className={cls}>
+      {start && <span className="start-tag">Empezá acá</span>}
       {step > 0 && <span className="step">{step}</span>}
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />

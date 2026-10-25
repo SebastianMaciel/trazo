@@ -7,7 +7,7 @@ import { TopBar } from "./panels/TopBar";
 import { useReview } from "./store";
 
 export function App() {
-  const { tourStep, select } = useReview();
+  const { tourStep, select, show } = useReview();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -24,11 +24,12 @@ export function App() {
     <ReactFlowProvider>
       <div className="app">
         <TopBar />
-        <div className="workspace">
-          <Sidebar />
+        {/* El canvas ocupa todo; los paneles flotan arriba */}
+        <div className={`workspace ${show.index ? "with-index" : ""}`}>
           <main className="canvas">
             <Canvas />
           </main>
+          {show.index && <Sidebar />}
           <DetailPanel />
         </div>
       </div>

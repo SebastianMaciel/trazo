@@ -2,6 +2,8 @@ import ELK, { type ElkNode, type ElkPort } from "elkjs/lib/elk.bundled.js";
 import type { Analysis, Block, Edge } from "../../src/shared/analysis";
 
 /** Geometría de la card: tiene que coincidir con el CSS de .block-head y .row */
+/** Debajo de este zoom las cards muestran solo el título grande */
+export const FAR_ZOOM = 0.55;
 export const BLOCK_W = 320;
 export const BORDER = 1.5;
 export const HEADER_H = 62;

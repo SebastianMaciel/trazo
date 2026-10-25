@@ -1,5 +1,5 @@
 import type { Block, Example } from "../../../src/shared/analysis";
-import { useReview } from "../store";
+import { useReview, useVisible } from "../store";
 
 export function DetailPanel() {
   const { analysis, selected } = useReview();
@@ -8,7 +8,8 @@ export function DetailPanel() {
 }
 
 function Overview() {
-  const { analysis, tourStep } = useReview();
+  const { tourStep } = useReview();
+  const analysis = useVisible();
   return (
     <div className="detail-inner">
       <p className="eyebrow">El cambio</p>
@@ -16,13 +17,12 @@ function Overview() {
       <ol className="overview">
         {analysis.groups.map((g) => (
           <li key={g.id}>
-            <span className={`risk-tag risk-${g.risk}`}>riesgo {g.risk}</span>
-            <strong>{g.title}</strong>
-            <p>{g.summary}</p>
+            <span className={`risk-dot risk-${g.risk}`} title={`riesgo ${g.risk}`} />
+            <span>{g.title}</span>
           </li>
         ))}
       </ol>
-      <button className="btn btn-primary btn-big" onClick={() => tourStep(1)}>
+      <button className="btn btn-primary btn-big btn-wide" onClick={() => tourStep(1)}>
         Empezar el recorrido →
       </button>
     </div>
@@ -31,10 +31,11 @@ function Overview() {
 
 function BlockDetail({ block }: { block: Block }) {
   const { analysis, checked, toggleCheck, tourStep, select } = useReview();
+  const tour = useVisible().tour;
   const incoming = analysis.edges.filter((e) => e.to === block.id);
   const outgoing = analysis.edges.filter((e) => e.from === block.id);
   const name = (id: string) => analysis.blocks.find((b) => b.id === id)?.title ?? id;
-  const isLast = analysis.tour.indexOf(block.id) === analysis.tour.length - 1;
+  const isLast = tour.indexOf(block.id) === tour.length - 1;
 
   return (
     <div className="detail-inner" key={block.id}>

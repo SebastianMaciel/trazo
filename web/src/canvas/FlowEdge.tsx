@@ -2,6 +2,8 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath, useStore, type Edge, type E
 import type { Edge as AEdge } from "../../../src/shared/analysis";
 import type { Point } from "../layout";
 
+import { FAR_ZOOM } from "../layout";
+
 export type FlowEdgeData = { edge: AEdge; active: boolean; dimmed: boolean; points?: Point[] };
 
 /** Polilínea ortogonal con esquinas redondeadas */
@@ -38,7 +40,7 @@ function labelPoint(pts: Point[]): Point {
 export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd, markerStart } = props;
   const e = data!.edge;
-  const far = useStore((s) => s.transform[2] < 0.45);
+  const far = useStore((s) => s.transform[2] < FAR_ZOOM);
 
   let path: string;
   let lx: number;
@@ -68,10 +70,10 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
             />
           </circle>
         ))}
-      {!far && (
+      {!far && data!.active && (
         <EdgeLabelRenderer>
           <div
-            className={`edge-label ${data!.active ? "is-active" : ""} ${data!.dimmed ? "is-dimmed" : ""}`}
+            className="edge-label is-active"
             style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
             title={e.evidence}
           >

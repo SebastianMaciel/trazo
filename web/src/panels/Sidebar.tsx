@@ -1,25 +1,15 @@
 import { useState } from "react";
-import { useReview } from "../store";
+import { useReview, useVisible } from "../store";
 
 export function Sidebar() {
-  const { analysis, selected, checked, select } = useReview();
+  const { selected, checked, select } = useReview();
+  const analysis = useVisible();
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
 
-  const done = analysis.blocks.filter((b) => checked[b.id]).length;
-  const pct = Math.round((done / analysis.blocks.length) * 100);
 
   return (
     <aside className="sidebar">
-      <div className="progress">
-        <div className="progress-text">
-          <strong>{done}</strong> de {analysis.blocks.length} entendidos
-        </div>
-        <div className="progress-bar">
-          <div style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
       <input className="filter" placeholder="Filtrar…" value={q} onChange={(e) => setQ(e.target.value)} />
 
       <nav className="tree">
