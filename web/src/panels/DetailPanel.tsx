@@ -9,8 +9,10 @@ export function DetailPanel() {
 }
 
 function Overview() {
-  const { tourStep } = useReview();
+  const { tourStep, verdicts, select } = useReview();
   const analysis = useVisible();
+  const next = analysis.tour.find((id) => !verdicts[id]);
+  const resumed = next !== analysis.tour[0];
   return (
     <div className="detail-inner">
       <p className="eyebrow">El cambio</p>
@@ -23,20 +25,25 @@ function Overview() {
           </li>
         ))}
       </ol>
-      <button className="btn btn-primary btn-big btn-wide" onClick={() => tourStep(1)}>
-        Empezar el recorrido →
-      </button>
+      {next ? (
+        <button className="btn btn-primary btn-big btn-wide" onClick={() => (resumed ? select(next) : tourStep(1))}>
+          {resumed ? "Seguir el recorrido →" : "Empezar el recorrido →"}
+        </button>
+      ) : (
+        <p className="all-done">Cerraste todos los bloques.</p>
+      )}
     </div>
   );
 }
 
 function BlockDetail({ block }: { block: Block }) {
-  const { analysis, checked, toggleCheck, tourStep, select } = useReview();
+  const { analysis, verdicts, setVerdict, tourStep, select } = useReview();
   const tour = useVisible().tour;
+  const verdict = verdicts[block.id];
   const incoming = analysis.edges.filter((e) => e.to === block.id);
   const outgoing = analysis.edges.filter((e) => e.from === block.id);
   const name = (id: string) => analysis.blocks.find((b) => b.id === id)?.title ?? id;
-  const isLast = tour.indexOf(block.id) === tour.length - 1;
+  const pos = tour.indexOf(block.id);
 
   return (
     <div className="detail-inner" key={block.id}>
@@ -80,22 +87,30 @@ function BlockDetail({ block }: { block: Block }) {
         </div>
       )}
 
-      <div className="actions">
-        <button className={`btn btn-big ${checked[block.id] ? "btn-done" : ""}`} onClick={() => toggleCheck(block.id)}>
-          {checked[block.id] ? "✓ Entendido" : "Lo entendí"}
-        </button>
-        {!isLast && (
-          <button
-            className="btn btn-big btn-primary"
-            onClick={() => {
-              if (!checked[block.id]) toggleCheck(block.id);
-              tourStep(1);
-            }}
-          >
-            Entendido, sigo →
+      {/* Cerrar el bloque es una decisión, separada de moverse */}
+      <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
+        <p className="verdict-q">¿Te cierra este cambio?</p>
+        <div className="verdict-options">
+          <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(block.id, "ok")} aria-pressed={verdict === "ok"}>
+            <span className="verdict-icon">✓</span>
+            Lo entendí
           </button>
-        )}
-      </div>
+          <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(block.id, "doubt")} aria-pressed={verdict === "doubt"}>
+            <span className="verdict-icon">?</span>
+            Tengo dudas
+          </button>
+        </div>
+      </section>
+
+      <nav className="stepper">
+        <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
+          ← Anterior
+        </button>
+        <span className="stepper-pos">{pos === -1 ? "fuera del recorrido" : `${pos + 1} / ${tour.length}`}</span>
+        <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
+          Siguiente →
+        </button>
+      </nav>
     </div>
   );
 }

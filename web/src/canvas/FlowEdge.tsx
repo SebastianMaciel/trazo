@@ -60,7 +60,9 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
       <BaseEdge path={path} className={cls} markerEnd={markerEnd} markerStart={markerStart} />
       {data!.active &&
         [0, 0.6, 1.2].map((begin) => (
-          <circle key={begin} r={3.2} className="particle">
+          // Escondida hasta que arranca: si no, espera parada en el origen del mapa
+          <circle key={begin} r={3.2} className="particle" visibility="hidden">
+            <set attributeName="visibility" to="visible" begin={`${begin}s`} />
             <animateMotion
               dur="1.8s"
               begin={`${begin}s`}

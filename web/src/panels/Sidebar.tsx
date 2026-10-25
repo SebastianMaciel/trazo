@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useReview, useVisible } from "../store";
 
 export function Sidebar() {
-  const { selected, checked, select } = useReview();
+  const { selected, verdicts, select } = useReview();
   const analysis = useVisible();
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
@@ -30,7 +30,7 @@ export function Sidebar() {
                 {blocks.map((b) => (
                   <li key={b.id}>
                     <button className={`tree-item ${selected === b.id ? "is-selected" : ""}`} onClick={() => select(b.id)}>
-                      <span className={`tree-check ${checked[b.id] ? "is-on" : ""}`}>{checked[b.id] ? "✓" : ""}</span>
+                      <span className={`tree-check ${verdicts[b.id] ? `is-${verdicts[b.id]}` : ""}`}>{verdicts[b.id] === "ok" ? "✓" : verdicts[b.id] === "doubt" ? "?" : ""}</span>
                       <span className="tree-name">{b.title}</span>
                       {b.warnings?.length ? <span className="warn-dot">!</span> : null}
                       <span className="tree-count">{b.rows.length}</span>

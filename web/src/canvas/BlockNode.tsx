@@ -1,5 +1,6 @@
 import { Handle, Position, useStore, type NodeProps, type Node } from "@xyflow/react";
 import type { Block, RowChange } from "../../../src/shared/analysis";
+import type { Verdict } from "../store";
 
 import { FAR_ZOOM } from "../layout";
 
@@ -8,10 +9,10 @@ export type BlockNodeData = {
   /** Posición en el recorrido, 0 si no está */
   step: number;
   /** Primer paso del recorrido, cuando no hay nada seleccionado */
-  start: boolean;
+  start: string | null;
   selected: boolean;
   dimmed: boolean;
-  checked: boolean;
+  verdict?: Verdict;
 };
 
 const KIND_LABEL: Record<Block["kind"], string> = {
@@ -27,16 +28,16 @@ const KIND_LABEL: Record<Block["kind"], string> = {
 const CHANGE_MARK: Record<RowChange, string> = { added: "+", modified: "~", deleted: "−", affected: "·" };
 
 export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
-  const { block, step, start, selected, dimmed, checked } = data;
+  const { block, step, start, selected, dimmed, verdict } = data;
   const far = useStore((s) => s.transform[2] < FAR_ZOOM);
 
-  const cls = ["block", far && "is-far", start && "is-start", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", checked && "is-checked", block.affected && "is-affected"]
+  const cls = ["block", far && "is-far", start && "is-start", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div className={cls}>
-      {start && <span className="start-tag">Empezá acá</span>}
+      {start && <span className="start-tag">{start}</span>}
       {step > 0 && <span className="step">{step}</span>}
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />
@@ -44,7 +45,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       <header className="block-head">
         <div className="block-title-row">
           <span className="block-title">{block.title}</span>
-          {checked && <span className="check-badge" title="Entendido">✓</span>}
+          <VerdictBadge verdict={verdict} />
           <span className={`chip chip-${block.kind}`}>{KIND_LABEL[block.kind]}</span>
         </div>
         <div className="block-file">
@@ -69,12 +70,21 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
       {far && (
         <div className="block-far">
-          <span className="block-far-title" style={{ fontSize: Math.min(40, 520 / block.title.length) }}>
+          <span className="block-far-title" style={{ fontSize: Math.min(40, (verdict ? 440 : 520) / block.title.length) }}>
             {block.title}
           </span>
-          {checked && <span className="check-badge">✓</span>}
+          <VerdictBadge verdict={verdict} />
         </div>
       )}
     </div>
+  );
+}
+
+function VerdictBadge({ verdict }: { verdict?: Verdict }) {
+  if (!verdict) return null;
+  return verdict === "ok" ? (
+    <span className="badge badge-ok" title="Entendido">✓</span>
+  ) : (
+    <span className="badge badge-doubt" title="Con dudas">?</span>
   );
 }

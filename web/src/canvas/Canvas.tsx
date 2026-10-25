@@ -6,11 +6,12 @@ import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import { GroupNode, type GroupNodeData } from "./GroupNode";
 
-const nodeTypes = { block: BlockNode, group: GroupNode };
+// "cluster" y no "group": React Flow le pone estilo propio (borde cuadrado) a los nodos tipo group
+const nodeTypes = { block: BlockNode, cluster: GroupNode };
 const edgeTypes = { flow: FlowEdge };
 
 export function Canvas() {
-  const { selected, checked, flyTick, select } = useReview();
+  const { selected, verdicts, flyTick, select } = useReview();
   const analysis = useVisible();
   const [layout, setLayout] = useState<Layout | null>(null);
   const flow = useReactFlow();
@@ -24,6 +25,9 @@ export function Canvas() {
   }, [analysis]);
 
   const focus = useMemo(() => neighbors(analysis, selected), [analysis, selected]);
+  // Por dónde seguir: el primer bloque del recorrido que todavía no cerraste
+  const next = analysis.tour.find((id) => !verdicts[id]);
+  const resumed = next !== analysis.tour[0];
 
   const nodes = useMemo<Node[]>(() => {
     if (!layout) return [];
@@ -32,14 +36,14 @@ export function Canvas() {
       const ids = analysis.blocks.filter((b) => b.group === g.id).map((b) => b.id);
       return {
         id: g.id,
-        type: "group",
+        type: "cluster",
         position: { x: p.x, y: p.y },
         width: p.w,
         height: p.h,
         selectable: false,
         draggable: false,
         zIndex: 0,
-        data: { group: g, done: ids.filter((id) => checked[id]).length, total: ids.length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
+        data: { group: g, done: ids.filter((id) => verdicts[id] === "ok").length, total: ids.length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
       };
     });
     const blocks: Node<BlockNodeData>[] = analysis.blocks.filter((b) => layout.blocks[b.id]).map((b) => {
@@ -53,11 +57,11 @@ export function Canvas() {
         height: p.h,
         draggable: false,
         zIndex: 1,
-        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, start: !selected && analysis.tour[0] === b.id, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), checked: !!checked[b.id] },
+        data: { block: b, step: analysis.tour.indexOf(b.id) + 1, start: !selected && next === b.id ? (resumed ? "Seguí acá" : "Empezá acá") : null, selected: b.id === selected, dimmed: !!selected && !focus.has(b.id), verdict: verdicts[b.id] },
       };
     });
     return [...groups, ...blocks];
-  }, [layout, analysis, selected, checked, focus]);
+  }, [layout, analysis, selected, verdicts, focus]);
 
   const edges = useMemo<Edge<FlowEdgeData>[]>(
     () =>
@@ -140,7 +144,7 @@ export function Canvas() {
       <MiniMap
         pannable
         zoomable
-        nodeColor={(n) => (n.type === "group" ? "rgba(140,160,210,0.12)" : n.id === selected ? "#f5b942" : checked[n.id] ? "#4ade80" : "#6a7bb0")}
+        nodeColor={(n) => (n.type === "cluster" ? "rgba(140,160,210,0.12)" : n.id === selected ? "#f5b942" : verdicts[n.id] === "ok" ? "#4ade80" : verdicts[n.id] === "doubt" ? "#f5b942" : "#6a7bb0")}
         nodeStrokeWidth={0}
         maskColor="rgba(6,10,22,0.7)"
         className="minimap"

@@ -3,6 +3,8 @@ import type { Analysis, Block } from "../../src/shared/analysis";
 import { mockAnalysis } from "./mock/conversion-montos";
 
 export type Layer = "tests" | "minor";
+/** Cómo cerró el revisor cada bloque. Navegar no marca nada */
+export type Verdict = "ok" | "doubt";
 type Show = Record<Layer | "index", boolean>;
 
 /**
@@ -12,14 +14,15 @@ type Show = Record<Layer | "index", boolean>;
 interface ReviewState {
   analysis: Analysis;
   selected: string | null;
-  checked: Record<string, boolean>;
+  verdicts: Record<string, Verdict>;
   show: Show;
   /** Panel de código completo, pegado al de detalle */
   codeOpen: boolean;
   /** Contador que sube cada vez que hay que mover la cámara (aunque se repita el bloque) */
   flyTick: number;
   select: (id: string | null, fly?: boolean) => void;
-  toggleCheck: (id: string) => void;
+  /** Elegir el mismo veredicto de nuevo lo saca */
+  setVerdict: (id: string, v: Verdict) => void;
   toggleShow: (key: keyof Show) => void;
   setCodeOpen: (open: boolean) => void;
   tourStep: (dir: 1 | -1) => void;
@@ -69,7 +72,7 @@ export function visibleAnalysis(a: Analysis, show: Show): Analysis {
 export const useReview = create<ReviewState>((set, get) => ({
   analysis: mockAnalysis,
   selected: null,
-  checked: load(`${BASE_KEY}:checked`, {}),
+  verdicts: load<Record<string, Verdict>>(`${BASE_KEY}:verdicts`, {}),
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   codeOpen: false,
   flyTick: 0,
@@ -82,10 +85,12 @@ export const useReview = create<ReviewState>((set, get) => ({
     if (layer && !show[layer]) get().toggleShow(layer);
     set((s) => ({ selected: id, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
-  toggleCheck: (id) => {
-    const checked = { ...get().checked, [id]: !get().checked[id] };
-    set({ checked });
-    save(`${BASE_KEY}:checked`, checked);
+  setVerdict: (id, v) => {
+    const verdicts = { ...get().verdicts };
+    if (verdicts[id] === v) delete verdicts[id];
+    else verdicts[id] = v;
+    set({ verdicts });
+    save(`${BASE_KEY}:verdicts`, verdicts);
   },
   toggleShow: (key) => {
     const show = { ...get().show, [key]: !get().show[key] };
