@@ -46,7 +46,8 @@ export function Canvas() {
     if (!layout) return [];
     const groups: Node<GroupNodeData>[] = analysis.groups.filter((g) => layout.groups[g.id]).map((g) => {
       const p = layout.groups[g.id];
-      const ids = analysis.blocks.filter((b) => b.group === g.id).map((b) => b.id);
+      // Los rombos cuentan en el progreso del grupo del bloque del que salen
+      const ids = graph.nodes.filter((n) => n.group === g.id && n.kind !== "end").map((n) => n.id);
       return {
         id: g.id,
         type: "cluster",
@@ -81,7 +82,7 @@ export function Canvas() {
         const dimmed = !!selected && !focus.has(n.id);
         if (n.kind === "decision") {
           const decision = analysis.decisions.find((d) => d.id === n.id)!;
-          return { ...base, type: "decision", data: { decision, selected: selected === n.id, dimmed } satisfies DecisionNodeData };
+          return { ...base, type: "decision", data: { decision, selected: selected === n.id, dimmed, step: steps.labels[n.id] ?? null, verdict: verdicts[n.id], start: !selected && next === n.id ? (resumed ? "Seguí acá" : "Empezá acá") : null } satisfies DecisionNodeData };
         }
         const w = graph.wires.find((x) => x.target === n.id)!;
         return { ...base, type: "end", selectable: false, data: { label: w.outcome!.end!.label, tone: w.outcome!.end!.tone, dimmed } satisfies EndNodeData };

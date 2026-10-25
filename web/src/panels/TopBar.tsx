@@ -3,9 +3,9 @@ import { layerOf, useReview, useVisible, type Layer } from "../store";
 export function TopBar() {
   const { analysis, selected, verdicts, show, select, toggleShow } = useReview();
   const visible = useVisible();
-  const ok = visible.blocks.filter((b) => verdicts[b.id] === "ok").length;
-  const doubts = visible.blocks.filter((b) => verdicts[b.id] === "doubt").length;
-  const total = Math.max(1, visible.blocks.length);
+  const ok = visible.tour.filter((id) => verdicts[id] === "ok").length;
+  const doubts = visible.tour.filter((id) => verdicts[id] === "doubt").length;
+  const total = Math.max(1, visible.tour.length);
   const count = (layer: Layer) => analysis.blocks.filter((b) => layerOf(analysis, b) === layer).length;
 
   return (
@@ -31,7 +31,7 @@ export function TopBar() {
 
       <div className="topbar-progress">
         <span>
-          <strong>{ok}</strong> de {visible.blocks.length} entendidos
+          <strong>{ok}</strong> de {visible.tour.length} entendidos
           {doubts > 0 && <span className="doubts"> · {doubts} con dudas</span>}
         </span>
         <div className="progress-bar">

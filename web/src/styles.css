@@ -431,3 +431,19 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .case-note { grid-column: 1 / -1; display: grid; gap: 2px; font-size: 13px; }
 .case-before { color: var(--muted); }
 .case-warning { color: #fda4af; font-weight: 600; }
+
+/* rombo como paso del recorrido */
+.decision-step { position: absolute; top: 6px; left: 50%; transform: translate(-50%, -50%); z-index: 2; }
+.decision.status-igual .decision-status, .decision .decision-step ~ .decision-status { bottom: calc(100% + 22px); }
+.decision.is-selected .step { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.decision.is-ok .step { background: var(--add); color: #062312; border-color: var(--add); }
+.decision.is-doubt .step { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.decision.is-ok .decision-shape polygon { stroke: rgba(74, 222, 128, 0.75); }
+.decision.is-selected .decision-shape polygon { stroke: var(--accent); }
+.decision-badge { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); }
+.decision.is-far .decision-badge { display: none; }
+.decision.is-start .decision-shape polygon { stroke: var(--accent); stroke-width: 2.5; animation: start-glow 1.8s ease-in-out infinite; }
+@keyframes start-glow { 50% { filter: drop-shadow(0 0 12px rgba(245, 185, 66, 0.7)); } }
+.decision.is-far .step { width: 64px; height: 64px; font-size: 30px; border-width: 3px; }
+.tree-diamond { color: #c4b5fd; font-size: 13px; }
+.tree-item.is-decision .tree-name { font-family: var(--sans); font-size: 13px; color: #ddd6fe; }

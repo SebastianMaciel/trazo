@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Analysis, Block } from "../../src/shared/analysis";
 import { mockAnalysis } from "./mock/conversion-montos";
+import { baseTour } from "./steps";
 
 export type Layer = "tests" | "minor";
 /** Cómo cerró el revisor cada bloque. Navegar no marca nada */
@@ -62,16 +63,17 @@ export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = [
     const layer = layerOf(a, b);
     return !layer || show[layer];
   });
-  const ids = new Set(blocks.map((b) => b.id));
+  const decisions = a.decisions.filter((d) => blocks.some((b) => b.id === d.from));
+  const ids = new Set([...blocks.map((b) => b.id), ...decisions.map((d) => d.id)]);
+  const steps = baseTour(a);
   return {
     ...a,
     blocks,
     groups: a.groups.filter((g) => blocks.some((b) => b.group === g.id)),
     edges: a.edges.filter((e) => ids.has(e.from) && ids.has(e.to)),
-    decisions: a.decisions.filter((d) => ids.has(d.from)),
-    tour: tourOrder.length
-      ? [...a.tour.filter((id) => ids.has(id))].sort((p, q) => rank(tourOrder, p) - rank(tourOrder, q))
-      : a.tour.filter((id) => ids.has(id)),
+    decisions,
+    // Los rombos van en el recorrido: se revisan igual que un bloque
+    tour: tourOrder.length ? [...steps.filter((id) => ids.has(id))].sort((p, q) => rank(tourOrder, p) - rank(tourOrder, q)) : steps.filter((id) => ids.has(id)),
   };
 }
 
@@ -111,8 +113,7 @@ export const useReview = create<ReviewState>((set, get) => ({
   tourStep: (dir) => {
     const { analysis, show, selected, tourOrder } = get();
     const tour = visibleAnalysis(analysis, show, tourOrder).tour;
-    const from = analysis.decisions.find((d) => d.id === selected)?.from ?? selected;
-    const i = from ? tour.indexOf(from) : -1;
+    const i = selected ? tour.indexOf(selected) : -1;
     const next = Math.min(tour.length - 1, Math.max(0, i + dir));
     get().select(tour[i === -1 ? 0 : next]);
   },

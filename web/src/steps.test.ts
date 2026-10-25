@@ -40,6 +40,22 @@ describe("computeSteps", () => {
     expect(s.order).toEqual(["a", "b", "test", "copy"]);
   });
 
+  it("un rombo es un paso entre el bloque del que sale y el que sigue", () => {
+    const a = {
+      title: "", base: "", head: "", repo: "",
+      groups: [{ id: "g", title: "", summary: "", risk: "bajo" as const }],
+      blocks: ["parse", "cents"].map(block),
+      edges: [],
+      decisions: [{ id: "d", from: "parse", condition: "", status: "nueva" as const, summary: "", evidence: "", outcomes: [{ id: "si", label: "sí", to: "cents" }, { id: "no", label: "no", end: { label: "400", tone: "error" as const } }] }],
+      tour: ["parse", "cents"],
+    };
+    const s = computeSteps(a);
+    expect(s.order).toEqual(["parse", "d", "cents"]);
+    expect(s.labels).toEqual({ parse: "1", d: "2", cents: "3" });
+    // Si el recorrido ya trae el rombo, no lo cuenta dos veces
+    expect(computeSteps({ ...a, tour: ["parse", "d", "cents"] }).labels.d).toBe("2");
+  });
+
   it("no se cuelga con ciclos", () => {
     const s = setup([edge("a", "b"), edge("b", "a")], ["a", "b"]);
     expect(Object.keys(s.labels).sort()).toEqual(["a", "b"]);

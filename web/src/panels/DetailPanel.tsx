@@ -42,11 +42,6 @@ function Overview() {
 }
 
 function BlockDetail({ block }: { block: Block }) {
-  const { verdicts, setVerdict, tourStep } = useReview();
-  const tour = useVisible().tour;
-  const verdict = verdicts[block.id];
-  const pos = tour.indexOf(block.id);
-
   return (
     <div className="detail-inner" key={block.id}>
       <p className="eyebrow">
@@ -68,37 +63,7 @@ function BlockDetail({ block }: { block: Block }) {
         <Snippet key={i} hunk={h} />
       ))}
 
-      {/* Cerrar el bloque es una decisión, separada de moverse */}
-      <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
-        <p className="verdict-q">¿Te cierra este cambio?</p>
-        <div className="verdict-options">
-          <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(block.id, "ok")} aria-pressed={verdict === "ok"}>
-            <span className="verdict-icon">✓</span>
-            Lo entendí
-          </button>
-          <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(block.id, "doubt")} aria-pressed={verdict === "doubt"}>
-            <span className="verdict-icon">?</span>
-            Tengo dudas
-          </button>
-        </div>
-      </section>
-
-      <nav className="stepper">
-        {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
-        <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
-          {tour.map((id, i) => (
-            <span key={id} className={`step-seg ${verdicts[id] ? `is-${verdicts[id]}` : ""} ${i === pos ? "is-current" : ""}`} />
-          ))}
-        </div>
-        <div className="stepper-btns">
-          <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
-            ← Anterior
-          </button>
-          <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
-            Siguiente →
-          </button>
-        </div>
-      </nav>
+      <Closing id={block.id} question="¿Te cierra este cambio?" />
     </div>
   );
 }
@@ -202,6 +167,50 @@ function DecisionDetail({ decision: d }: { decision: Decision }) {
       )}
 
       {d.hunk && <Snippet hunk={d.hunk} />}
+
+      <Closing id={d.id} question="¿Te cierra esta condición?" />
     </div>
+  );
+}
+
+/** Cerrar un paso es una decisión explícita, separada de moverse por el recorrido */
+function Closing({ id, question }: { id: string; question: string }) {
+  const { verdicts, setVerdict, tourStep } = useReview();
+  const tour = useVisible().tour;
+  const verdict = verdicts[id];
+  const pos = tour.indexOf(id);
+  return (
+    <>
+      <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
+        <p className="verdict-q">{question}</p>
+        <div className="verdict-options">
+          <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(id, "ok")} aria-pressed={verdict === "ok"}>
+            <span className="verdict-icon">✓</span>
+            Lo entendí
+          </button>
+          <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(id, "doubt")} aria-pressed={verdict === "doubt"}>
+            <span className="verdict-icon">?</span>
+            Tengo dudas
+          </button>
+        </div>
+      </section>
+
+      <nav className="stepper">
+        {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
+        <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
+          {tour.map((t, i) => (
+            <span key={t} className={`step-seg ${verdicts[t] ? `is-${verdicts[t]}` : ""} ${i === pos ? "is-current" : ""}`} />
+          ))}
+        </div>
+        <div className="stepper-btns">
+          <button className="btn" onClick={() => tourStep(-1)} disabled={pos <= 0}>
+            ← Anterior
+          </button>
+          <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
+            Siguiente →
+          </button>
+        </div>
+      </nav>
+    </>
   );
 }

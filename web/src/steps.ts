@@ -14,11 +14,19 @@ export interface Steps {
  * manda el orden del recorrido de la AI (por ejemplo, lo más riesgoso primero).
  * Los bloques sin flujo (tests, textos) van al final en el orden de la AI.
  */
+/** El recorrido de la AI con cada rombo justo después del bloque del que sale */
+export function baseTour(a: Analysis): string[] {
+  // Sin repetir: el recorrido que llega puede traer los rombos ya incluidos
+  return [...new Set(a.tour.flatMap((id) => [id, ...a.decisions.filter((d) => d.from === id).map((d) => d.id)]))];
+}
+
 export function computeSteps(a: Analysis): Steps {
+  // Un rombo es un paso más: bloque → rombo → lo que sigue por cada salida
   const flow = [
     ...a.edges.filter((e) => e.kind !== "testea"),
-    ...a.decisions.flatMap((d) => d.outcomes.filter((o) => o.to).map((o) => ({ from: d.from, to: o.to! }))),
+    ...a.decisions.flatMap((d) => [{ from: d.from, to: d.id }, ...d.outcomes.filter((o) => o.to).map((o) => ({ from: d.id, to: o.to! }))]),
   ];
+  const tour = baseTour(a);
   const inFlow = new Set(flow.flatMap((e) => [e.from, e.to]));
   const level: Record<string, number> = {};
 
@@ -33,7 +41,7 @@ export function computeSteps(a: Analysis): Steps {
   };
 
   const byLevel = new Map<number, string[]>();
-  for (const id of a.tour.filter((id) => inFlow.has(id))) {
+  for (const id of tour.filter((id) => inFlow.has(id))) {
     const l = visit(id);
     byLevel.set(l, [...(byLevel.get(l) ?? []), id]);
   }
@@ -49,7 +57,7 @@ export function computeSteps(a: Analysis): Steps {
       order.push(id);
     });
   }
-  for (const id of a.tour.filter((id) => !inFlow.has(id))) {
+  for (const id of tour.filter((id) => !inFlow.has(id))) {
     labels[id] = `${++n}`;
     order.push(id);
   }
