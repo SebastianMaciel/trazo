@@ -137,7 +137,7 @@ button { font: inherit; color: inherit; }
 .block.is-checked.is-selected { border-color: var(--accent); }
 .block.is-affected { border-style: dashed; background: var(--bg-2); }
 
-.block-head { padding: 10px 14px 8px; border-bottom: 1px solid var(--line); }
+.block-head { height: 62px; padding: 10px 14px 8px; border-bottom: 1px solid var(--line); }
 .block-title-row { display: flex; align-items: center; gap: 8px; }
 .block-title { font: 600 15px var(--mono); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .block-file { display: flex; align-items: center; gap: 6px; font: 12px var(--mono); color: var(--muted); margin-top: 2px; }

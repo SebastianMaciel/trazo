@@ -58,6 +58,7 @@ export function Canvas() {
     () =>
       analysis.edges.map((e) => {
         const active = !!selected && (e.from === selected || e.to === selected);
+        const marker = { type: MarkerType.ArrowClosed, width: 16, height: 16, color: active ? "#f5b942" : "#6c7fb3" };
         return {
           id: e.id,
           type: "flow",
@@ -66,11 +67,12 @@ export function Canvas() {
           sourceHandle: e.fromRow ? `${e.fromRow}:out` : "card:out",
           targetHandle: e.toRow ? `${e.toRow}:in` : "card:in",
           zIndex: active ? 3 : 2,
-          markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: active ? "#f5b942" : "#5d6f9e" },
-          data: { edge: e, active, dimmed: !!selected && !active },
+          // Las de test se rutean código → test: la punta va al principio del trazo, apuntando al código
+          ...(e.kind === "testea" ? { markerStart: { ...marker, orient: "auto-start-reverse" } } : { markerEnd: marker }),
+          data: { edge: e, active, dimmed: !!selected && !active, points: layout?.edges[e.id] },
         };
       }),
-    [analysis, selected],
+    [analysis, selected, layout],
   );
 
   // La cámara viaja al bloque y lo deja a un zoom donde se lee
