@@ -4,12 +4,12 @@ import type { Analysis, Block, Edge } from "../../src/shared/analysis";
 /** Geometría de la card: tiene que coincidir con el CSS de .block-head y .row */
 /** Debajo de este zoom las cards muestran solo el título grande */
 export const FAR_ZOOM = 0.55;
-export const BLOCK_W = 320;
+export const BLOCK_W = 340;
 export const BORDER = 1.5;
-export const HEADER_H = 62;
-export const ROWS_PAD = 5;
-export const ROW_H = 32;
-export const CARD_PORT_Y = 24;
+export const HEADER_H = 70;
+export const ROWS_PAD = 8;
+export const ROW_H = 36;
+export const CARD_PORT_Y = 28;
 
 export const blockHeight = (b: Block) => BORDER * 2 + HEADER_H + ROWS_PAD * 2 + b.rows.length * ROW_H;
 const rowY = (i: number) => BORDER + HEADER_H + ROWS_PAD + i * ROW_H + ROW_H / 2;
@@ -66,11 +66,11 @@ function ports(b: Block): ElkPort[] {
 
 /** ELK no hereda el espaciado de la raíz a los grupos con INCLUDE_CHILDREN: va en cada nivel */
 const SPACING = {
-  "elk.spacing.nodeNode": "48",
-  "elk.spacing.edgeNode": "24",
-  "elk.spacing.edgeEdge": "14",
-  "elk.layered.spacing.nodeNodeBetweenLayers": "120",
-  "elk.layered.spacing.edgeNodeBetweenLayers": "28",
+  "elk.spacing.nodeNode": "72",
+  "elk.spacing.edgeNode": "36",
+  "elk.spacing.edgeEdge": "20",
+  "elk.layered.spacing.nodeNodeBetweenLayers": "220",
+  "elk.layered.spacing.edgeNodeBetweenLayers": "48",
 };
 
 export async function layoutAnalysis(a: Analysis): Promise<Layout> {
@@ -83,12 +83,12 @@ export async function layoutAnalysis(a: Analysis): Promise<Layout> {
       "elk.edgeRouting": "ORTHOGONAL",
       "elk.json.edgeCoords": "ROOT",
       ...SPACING,
-      "elk.spacing.componentComponent": "180",
+      "elk.spacing.componentComponent": "240",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
     children: a.groups.map((g) => ({
       id: g.id,
-      layoutOptions: { ...SPACING, "elk.padding": "[top=100,left=32,bottom=32,right=32]" },
+      layoutOptions: { ...SPACING, "elk.padding": "[top=120,left=56,bottom=56,right=56]" },
       children: a.blocks
         .filter((b) => b.group === g.id)
         .map((b) => ({ id: b.id, width: BLOCK_W, height: blockHeight(b), ports: ports(b), layoutOptions: { "elk.portConstraints": "FIXED_POS" } })),

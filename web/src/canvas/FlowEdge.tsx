@@ -74,7 +74,8 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
         ))}
       {!far && data!.active && (
         <EdgeLabelRenderer>
-          <div className="edge-label is-active" style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}>
+          <div className="edge-label is-active" // Arriba de la línea, no encima: así no tapa el trazo
+            style={{ transform: `translate(-50%, calc(-100% - 8px)) translate(${lx}px, ${ly}px)` }}>
             <span className="edge-label-data">{e.label}</span>
             {/* La evidencia: dónde se ve en el código que esta flecha es real */}
             <span className="edge-label-ev">{e.evidence.split("/").pop()}</span>

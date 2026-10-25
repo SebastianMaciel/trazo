@@ -114,9 +114,9 @@ export function Canvas() {
       let cx = (box.x + box.x2) / 2;
       let cy = (box.y + box.y2) / 2;
       // Vecinos muy desparramados: mejor centrar solo el bloque a un zoom que se lea
-      if (selected && zoom < 0.7) {
+      if (selected && zoom < 0.85) {
         const me = rects.find((r) => r.id === selected)!;
-        zoom = 0.9;
+        zoom = 0.95;
         cx = me.x + me.w / 2;
         cy = me.y + me.h / 2;
       }
