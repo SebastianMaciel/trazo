@@ -68,6 +68,7 @@ export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = [
     blocks,
     groups: a.groups.filter((g) => blocks.some((b) => b.group === g.id)),
     edges: a.edges.filter((e) => ids.has(e.from) && ids.has(e.to)),
+    decisions: a.decisions.filter((d) => ids.has(d.from)),
     tour: tourOrder.length
       ? [...a.tour.filter((id) => ids.has(id))].sort((p, q) => rank(tourOrder, p) - rank(tourOrder, q))
       : a.tour.filter((id) => ids.has(id)),
@@ -110,7 +111,8 @@ export const useReview = create<ReviewState>((set, get) => ({
   tourStep: (dir) => {
     const { analysis, show, selected, tourOrder } = get();
     const tour = visibleAnalysis(analysis, show, tourOrder).tour;
-    const i = selected ? tour.indexOf(selected) : -1;
+    const from = analysis.decisions.find((d) => d.id === selected)?.from ?? selected;
+    const i = from ? tour.indexOf(from) : -1;
     const next = Math.min(tour.length - 1, Math.max(0, i + dir));
     get().select(tour[i === -1 ? 0 : next]);
   },
@@ -127,14 +129,3 @@ export function useVisible(): Analysis {
 
 /** Los que no están en el orden calculado (recién prendidos) van al final */
 const rank = (order: string[], id: string) => (order.includes(id) ? order.indexOf(id) : order.length);
-
-export function neighbors(analysis: Analysis, id: string | null): Set<string> {
-  const out = new Set<string>();
-  if (!id) return out;
-  out.add(id);
-  for (const e of analysis.edges) {
-    if (e.from === id) out.add(e.to);
-    if (e.to === id) out.add(e.from);
-  }
-  return out;
-}

@@ -64,6 +64,45 @@ export interface Edge {
   evidence: string;
 }
 
+/** En qué estado quedó una condición respecto de la rama base */
+export type DecisionStatus = "nueva" | "cambió" | "igual";
+
+/** A dónde lleva una salida: a otro bloque, o termina ahí (responde un error, corta el flujo) */
+export interface Outcome {
+  id: string;
+  /** "sí" / "no", o el valor del caso */
+  label: string;
+  to?: string;
+  toRow?: string;
+  end?: { label: string; tone: "error" | "ok" };
+}
+
+/** Un dato concreto y por qué salida se va */
+export interface DecisionCase {
+  input: string;
+  outcome: string;
+  /** Si antes del cambio se iba por otro lado (o no existía la condición) */
+  before?: string;
+  /** Algo que conviene saber aunque tome el camino esperado */
+  warning?: string;
+}
+
+/** Un punto donde el flujo se divide: pasa por una salida o por la otra, nunca por las dos */
+export interface Decision {
+  id: string;
+  /** De qué bloque viene el dato que se evalúa */
+  from: string;
+  fromRow?: string;
+  condition: string;
+  status: DecisionStatus;
+  summary: string;
+  /** archivo:línea del if */
+  evidence: string;
+  outcomes: Outcome[];
+  cases?: DecisionCase[];
+  hunk?: HunkView;
+}
+
 export interface Analysis {
   title: string;
   base: string;
@@ -72,5 +111,6 @@ export interface Analysis {
   groups: Group[];
   blocks: Block[];
   edges: Edge[];
+  decisions: Decision[];
   tour: string[];
 }

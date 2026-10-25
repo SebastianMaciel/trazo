@@ -15,7 +15,10 @@ export interface Steps {
  * Los bloques sin flujo (tests, textos) van al final en el orden de la AI.
  */
 export function computeSteps(a: Analysis): Steps {
-  const flow = a.edges.filter((e) => e.kind !== "testea");
+  const flow = [
+    ...a.edges.filter((e) => e.kind !== "testea"),
+    ...a.decisions.flatMap((d) => d.outcomes.filter((o) => o.to).map((o) => ({ from: d.from, to: o.to! }))),
+  ];
   const inFlow = new Set(flow.flatMap((e) => [e.from, e.to]));
   const level: Record<string, number> = {};
 

@@ -14,6 +14,7 @@ function setup(edges: Edge[], tour: string[]) {
     groups: [{ id: "g", title: "", summary: "", risk: "bajo" }],
     blocks: tour.map(block),
     edges,
+    decisions: [],
     tour,
   };
   return computeSteps(analysis);

@@ -1,11 +1,16 @@
-import type { Block, Example, HunkView } from "../../../src/shared/analysis";
+import type { Block, Decision, Example, HunkView } from "../../../src/shared/analysis";
 import { Code, useTokens } from "../highlight";
 import { useReview, useVisible } from "../store";
 
 export function DetailPanel() {
   const { analysis, selected } = useReview();
   const block = analysis.blocks.find((b) => b.id === selected);
-  return <aside className="detail">{block ? <BlockDetail block={block} /> : <Overview />}</aside>;
+  const decision = analysis.decisions.find((d) => d.id === selected);
+  return (
+    <aside className="detail">
+      {block ? <BlockDetail block={block} /> : decision ? <DecisionDetail decision={decision} /> : <Overview />}
+    </aside>
+  );
 }
 
 function Overview() {
@@ -143,5 +148,60 @@ function Snippet({ hunk }: { hunk: HunkView }) {
         {codeOpen ? "Cerrar código" : "Ver código completo →"}
       </div>
     </button>
+  );
+}
+
+const STATUS = { nueva: "Condición nueva", cambió: "Condición cambiada", igual: "Condición sin cambios" } as const;
+
+/** Un rombo: qué se pregunta, a dónde va cada respuesta y qué camino toma cada dato */
+function DecisionDetail({ decision: d }: { decision: Decision }) {
+  const { analysis, select } = useReview();
+  const where = (o: Decision["outcomes"][number]) =>
+    o.end ? o.end.label : `sigue a ${analysis.blocks.find((b) => b.id === o.to)?.title ?? o.to}`;
+
+  return (
+    <div className="detail-inner" key={d.id}>
+      <p className="eyebrow">
+        {d.evidence} · <span className={`status-tag status-${d.status}`}>{STATUS[d.status]}</span>
+      </p>
+      <h1 className="detail-title">{d.condition}</h1>
+      <p className="lead">{d.summary}</p>
+
+      <div className="outcomes">
+        {d.outcomes.map((o) => (
+          <button key={o.id} className={`outcome ${o.end ? `tone-${o.end.tone}` : ""}`} onClick={() => o.to && select(o.to)} disabled={!o.to}>
+            <span className="outcome-answer">{o.label}</span>
+            <span className="outcome-arrow">→</span>
+            <span className="outcome-where">{where(o)}</span>
+          </button>
+        ))}
+      </div>
+
+      {d.cases && d.cases.length > 0 && (
+        <div className="cases">
+          <div className="example-head">
+            <span>Qué camino toma cada dato</span>
+            <span className="source">estimado por la AI</span>
+          </div>
+          {d.cases.map((c) => {
+            const o = d.outcomes.find((x) => x.id === c.outcome);
+            return (
+              <div key={c.input} className={`case ${c.warning ? "has-warning" : ""}`}>
+                <code className="case-input">{c.input}</code>
+                <span className={`case-answer ${o?.end ? `tone-${o.end.tone}` : ""}`}>{o?.label}</span>
+                {(c.before || c.warning) && (
+                  <span className="case-note">
+                    {c.before && <span className="case-before">antes: {c.before}</span>}
+                    {c.warning && <span className="case-warning">! {c.warning}</span>}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {d.hunk && <Snippet hunk={d.hunk} />}
+    </div>
   );
 }

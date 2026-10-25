@@ -1,10 +1,10 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useStore, type Edge, type EdgeProps } from "@xyflow/react";
-import type { Edge as AEdge } from "../../../src/shared/analysis";
+import type { Wire } from "../graph";
 import type { Point } from "../layout";
 
 import { FAR_ZOOM } from "../layout";
 
-export type FlowEdgeData = { edge: AEdge; active: boolean; dimmed: boolean; points?: Point[] };
+export type FlowEdgeData = { wire: Wire; active: boolean; dimmed: boolean; points?: Point[] };
 
 /** Polilínea ortogonal con esquinas redondeadas */
 function roundedPath(pts: Point[], radius = 14): string {
@@ -39,7 +39,7 @@ function labelPoint(pts: Point[]): Point {
 
 export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd, markerStart } = props;
-  const e = data!.edge;
+  const e = data!.wire;
   const far = useStore((s) => s.transform[2] < FAR_ZOOM);
 
   let path: string;
@@ -51,9 +51,17 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
   } else {
     [path, lx, ly] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.35 });
   }
-  const cls = `flow flow-${e.kind} ${data!.active ? "is-active" : ""} ${data!.dimmed ? "is-dimmed" : ""}`;
+  const tone = e.outcome?.end?.tone === "error" ? "is-error" : "";
+  const cls = `flow flow-${e.kind} ${tone} ${data!.active ? "is-active" : ""} ${data!.dimmed ? "is-dimmed" : ""}`;
+  // Las salidas de un rombo siempre dicen "sí" / "no", pegado al rombo: sin eso la decisión no se lee
+  const start = data!.points?.[0] ?? { x: sourceX, y: sourceY };
+  const second = data!.points?.[1] ?? { x: targetX, y: targetY };
+  const len = Math.hypot(second.x - start.x, second.y - start.y) || 1;
+  const along = Math.min(30, len / 2);
+  const ox = start.x + ((second.x - start.x) / len) * along;
+  const oy = start.y + ((second.y - start.y) / len) * along;
   // En las de test el layout va código → test, así que las partículas corren al revés
-  const reverse = e.kind === "testea";
+  const reverse = !!e.reversed;
 
   return (
     <>
@@ -72,7 +80,14 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
             />
           </circle>
         ))}
-      {!far && data!.active && (
+      {!far && e.outcome && (
+        <EdgeLabelRenderer>
+          <div className={`outcome-label ${tone} ${data!.dimmed ? "is-dimmed" : ""}`} style={{ transform: `translate(-50%, -50%) translate(${ox}px, ${oy}px)` }}>
+            {e.label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+      {!far && data!.active && !e.outcome && e.label && (
         <EdgeLabelRenderer>
           <div className="edge-label is-active" // Arriba de la línea, no encima: así no tapa el trazo
             style={{ transform: `translate(-50%, calc(-100% - 8px)) translate(${lx}px, ${ly}px)` }}>

@@ -4,7 +4,9 @@ import { useReview } from "../store";
 
 export function CodePanel() {
   const { analysis, selected, setCodeOpen } = useReview();
-  const block = analysis.blocks.find((b) => b.id === selected);
+  const found = analysis.blocks.find((b) => b.id === selected);
+  const decision = analysis.decisions.find((d) => d.id === selected);
+  const block = found ?? (decision?.hunk ? { id: decision.id, title: decision.condition, file: decision.hunk.file, hunks: [decision.hunk] } : undefined);
   if (!block || !block.hunks.length) return null;
 
   return (

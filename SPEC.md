@@ -53,6 +53,25 @@ Referencias: un visor de JSON tipo grafo (cards con filas, conectores curvos) y 
 - Comentarios que se publiquen en el PR.
 - Otros lenguajes además de TS/JS (el análisis puede andar con cualquiera, pero se prueba con TS).
 
+## Próximo caso de prueba: la AI como reviewer
+
+Cuando terminemos de afinar la UI con el happy path, el siguiente caso es que la AI haga un code review de verdad antes de armar el mapa. Para eso lee:
+
+- El código de origen (cómo estaba), los cambios y hacia dónde fluye cada dato.
+- El ticket de Jira y el contexto que haya (descripción, criterios de aceptación, comentarios).
+
+Y marca en el mapa, sobre el bloque o la flecha que corresponda:
+
+- **Lo que rompería algo:** "con este input, esto devuelve X y antes devolvía Y".
+- **Lo que no se alinea con el ticket:** el ticket pide A y el cambio hace B, o hace A y además algo que nadie pidió.
+- **Sugerencias,** como mínimo resaltadas, aunque no proponga el código.
+
+Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rotura escondida (`count < MAX_INSTALLMENTS` deja afuera las 12 cuotas) mezclada con cambios legítimos. Hay que escribirle un ticket que pida solo el arreglo del IVA.
+
+## Backlog de UI
+
+- **"Tengo dudas" con texto:** un campito para escribir la duda. Junto con el bloque y su evidencia (archivo:línea) queda un comentario listo para mandarle al autor, o para publicar en el MR más adelante.
+
 ## Decisiones
 
 | Decisión | Elegido | Por qué / trade-off |
@@ -73,11 +92,12 @@ Referencias: un visor de JSON tipo grafo (cards con filas, conectores curvos) y 
 - `groups[]`: id, título de intención y resumen de una línea.
 - `blocks[]`: id, group, título, explicación corta, `hunks[]` (archivo + rango de líneas del diff) y nivel de riesgo (bajo/medio/alto).
 - `edges[]`: from, to, tipo (`llama`, `importa`, `usa-tipo`, `flujo-de-datos`) y **evidencia** (archivo:línea).
-- `tour[]`: orden sugerido de bloques.
+- `decisions[]`: los puntos donde el flujo se divide (un `if` que decide a dónde va el dato). Cada uno lleva condición, estado (`nueva` / `cambió` / `igual`), salidas (a otro bloque o a un final, como "responde 400"), casos de ejemplo con el camino que toma cada uno y evidencia (archivo:línea del `if`).
+- `tour[]`: orden sugerido de bloques. Se respeta dentro de cada nivel del flujo: nada aparece antes de lo que le pasa datos.
 
 Reglas que valida el server (no la AI):
 - Todo hunk del diff pertenece a exactamente un bloque. Si alguno queda huérfano, va a "sin clasificar" (nunca desaparece código del review).
-- Un edge sin evidencia, o con evidencia que no existe en el archivo, se descarta.
+- Un edge o una decisión sin evidencia, o con evidencia que no existe en el archivo, se descarta.
 - Si el JSON no cumple el schema, se reintenta una vez y si vuelve a fallar se muestra el error.
 
 ## Criterios de terminado

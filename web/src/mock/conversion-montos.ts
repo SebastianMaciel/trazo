@@ -226,13 +226,36 @@ export const mockAnalysis: Analysis = {
   ],
   edges: [
     { id: "e1", from: "b-handler", to: "b-parse", fromRow: "r-h-parse", kind: "llama", label: "body.amount", evidence: "src/api/checkout.ts:13" },
-    { id: "e2", from: "b-parse", to: "b-cents", toRow: "r-c-round", kind: "datos", label: "pesos", evidence: "src/api/checkout.ts:17" },
     { id: "e3", from: "b-cents", to: "b-cart", fromRow: "r-c-round", toRow: "r-ca-sum", kind: "datos", label: "centavos", evidence: "src/cart.ts:4" },
     { id: "e4", from: "b-cart", to: "b-inst", toRow: "r-i-base", kind: "datos", label: "total", evidence: "src/installments.ts:12" },
     { id: "e5", from: "b-cart", to: "b-invoice", toRow: "r-inv-total", kind: "datos", label: "total", evidence: "src/invoice.ts:21" },
     { id: "e6", from: "b-cents", to: "b-invoice", fromRow: "r-c-round", toRow: "r-inv-lines", kind: "datos", label: "precio por línea", evidence: "src/invoice.ts:14" },
     { id: "e7", from: "b-test", to: "b-parse", fromRow: "r-t-1", kind: "testea", label: "testea", evidence: "src/money.test.ts:6" },
     { id: "e8", from: "b-test", to: "b-cents", fromRow: "r-t-3", kind: "testea", label: "testea", evidence: "src/money.test.ts:11" },
+  ],
+  decisions: [
+    {
+      id: "d-valid",
+      from: "b-parse",
+      condition: "¿Se pudo leer el monto?",
+      status: "nueva",
+      summary: "Antes cualquier texto seguía de largo y parseFloat lo convertía en algo, aunque fuera basura. Ahora si parseARS no lo entiende, el pedido se corta con un 400.",
+      evidence: "src/api/checkout.ts:14",
+      outcomes: [
+        { id: "si", label: "sí", to: "b-cents", toRow: "r-c-round" },
+        { id: "no", label: "no", end: { label: "responde 400", tone: "error" } },
+      ],
+      cases: [
+        { input: `"1.234,56"`, outcome: "si" },
+        { input: `"abc"`, outcome: "no", before: "seguía como NaN" },
+        { input: `"1234.56"`, outcome: "si", warning: "pasa, pero lo lee como 123456" },
+      ],
+      hunk: hunk("src/api/checkout.ts", "export async function handleCheckout(req: Request)", 12, 12, `
++  const amount = parseARS(body.amount);
++  if (amount === null) {
++    return json({ error: copy.invalidAmount }, 400);
++  }`),
+    },
   ],
   tour: ["b-handler", "b-parse", "b-cents", "b-cart", "b-inst", "b-invoice", "b-test", "b-copy"],
 };
