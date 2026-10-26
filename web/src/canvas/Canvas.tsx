@@ -1,4 +1,4 @@
-import { Background, BackgroundVariant, MarkerType, MiniMap, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
+import { Background, BackgroundVariant, MarkerType, MiniMap, PanOnScrollMode, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
@@ -174,6 +174,9 @@ export function Canvas() {
       }}
       onPaneClick={() => select(null, false)}
       nodesConnectable={false}
+      // Como en Figma: dos dedos mueven el canvas, pellizcar hace zoom
+      panOnScroll
+      panOnScrollMode={PanOnScrollMode.Free}
       minZoom={0.08}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
