@@ -1,7 +1,7 @@
 /* Temas. Cada uno pisa las variables de :root (que es "Noche", el original) */
 
-/* Nord: el ártico de siempre, azules apagados y escarcha */
-[data-theme="nord"] {
+/* Ártico: azules apagados y escarcha */
+[data-theme="artico"] {
   --bg: #242933;
   --bg-2: #2b303b;
   --panel: #2e3440;
@@ -42,8 +42,8 @@
   --shiki: nord;
 }
 
-/* GitHub: el dark de github.com, tal cual */
-[data-theme="github"] {
+/* Grafito: gris casi negro, sobrio */
+[data-theme="grafito"] {
   --bg: #010409;
   --bg-2: #0d1117;
   --panel: #151b23;
@@ -84,8 +84,8 @@
   --shiki: github-dark-default;
 }
 
-/* Matrix: verde, pero de noche y tranquilo. Sin lluvia de caracteres ni fuente de hacker */
-[data-theme="matrix"] {
+/* Fósforo: verde, pero de noche y tranquilo */
+[data-theme="fosforo"] {
   --bg: #070d0a;
   --bg-2: #0b130f;
   --panel: #0f1a14;
@@ -169,8 +169,8 @@
 }
 [data-theme="ambar"] code { filter: sepia(1) saturate(2.6) hue-rotate(-12deg) brightness(1.05); }
 
-/* MU-TH-UR 6000: la computadora de la Nostromo. Mayúsculas, verde frío, pantalla de servicio */
-[data-theme="muthur"] {
+/* Nave: terminal de servicio. Mayúsculas y verde frío */
+[data-theme="nave"] {
   --bg: #020605;
   --bg-2: #040b09;
   --panel: #06110e;
@@ -210,14 +210,14 @@
   --mono: "Share Tech Mono", ui-monospace, monospace;
   --shiki: min-dark;
 }
-[data-theme="muthur"] code { filter: sepia(1) saturate(2.2) hue-rotate(115deg) brightness(1.1); }
-[data-theme="muthur"] .detail-title,
-[data-theme="muthur"] .group-title,
-[data-theme="muthur"] .pr-title,
-[data-theme="muthur"] .eyebrow,
-[data-theme="muthur"] .verdict-q,
-[data-theme="muthur"] .btn { text-transform: uppercase; letter-spacing: 0.08em; }
-[data-theme="muthur"] body { text-shadow: 0 0 6px color-mix(in srgb, #7dffcb 25%, transparent); }
+[data-theme="nave"] code { filter: sepia(1) saturate(2.2) hue-rotate(115deg) brightness(1.1); }
+[data-theme="nave"] .detail-title,
+[data-theme="nave"] .group-title,
+[data-theme="nave"] .pr-title,
+[data-theme="nave"] .eyebrow,
+[data-theme="nave"] .verdict-q,
+[data-theme="nave"] .btn { text-transform: uppercase; letter-spacing: 0.08em; }
+[data-theme="nave"] body { text-shadow: 0 0 6px color-mix(in srgb, #7dffcb 25%, transparent); }
 
 /* Paper: un e-reader. Papel tibio, tinta casi negra, serif para leer de corrido */
 [data-theme="paper"] {

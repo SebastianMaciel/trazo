@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from "react";
 /** Los colores de verdad están en themes.css; la muestra del menú se pinta con el tema mismo */
 export const THEMES = [
   { id: "noche", name: "Noche", note: "el de siempre", display: "Space Grotesk Variable" },
-  { id: "nord", name: "Nord", note: "azules árticos apagados", display: "Inter Variable" },
-  { id: "github", name: "GitHub", note: "el dark de github.com", display: "Inter Variable" },
-  { id: "matrix", name: "Matrix", note: "verde, de noche y tranquilo", display: "Inter Variable" },
+  { id: "artico", name: "Ártico", note: "azules apagados y escarcha", display: "Inter Variable" },
+  { id: "grafito", name: "Grafito", note: "gris casi negro, sobrio", display: "Inter Variable" },
+  { id: "fosforo", name: "Fósforo", note: "verde, de noche y tranquilo", display: "Inter Variable" },
   { id: "ambar", name: "Ámbar", note: "monitor de fósforo ámbar", display: "IBM Plex Mono" },
-  { id: "muthur", name: "MU-TH-UR 6000", note: "la computadora de la Nostromo", display: "Share Tech Mono" },
+  { id: "nave", name: "Nave", note: "terminal de servicio, mayúsculas y verde frío", display: "Share Tech Mono" },
   { id: "paper", name: "Paper", note: "claro, papel de e-reader", light: true, display: "Literata Variable" },
   { id: "psycho", name: "Psycho", note: "claro, para los que programan con el sol de frente", light: true, display: "Inter Variable" },
 ] as const;

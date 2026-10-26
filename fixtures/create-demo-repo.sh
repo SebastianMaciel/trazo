@@ -30,8 +30,8 @@ mkdir -p "$TARGET"
 cd "$TARGET"
 
 git init -q -b main
-git config user.name "Sebastian Maciel"
-git config user.email "4841148+SebastianMaciel@users.noreply.github.com"
+git config user.name "Demo"
+git config user.email "demo@example.com"
 git config commit.gpgsign false
 git config core.autocrlf false
 git config core.hooksPath .git/no-hooks
