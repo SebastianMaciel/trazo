@@ -611,9 +611,16 @@ button.topbar-progress:hover, button.topbar-progress.is-on { border-color: var(-
 /* Lo que falta: grupos con título, filas separadas por líneas y aire entre cada una */
 .pending { margin-top: 34px; }
 .pending-title { margin: 0 0 4px; font: 600 18px var(--display); }
-.pending-group { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line-2); }
-.pending-group-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font: 600 15px var(--sans); color: var(--text); }
-.pending-group-title .group-n { font-size: 12px; width: 22px; height: 22px; }
+.pending-group { margin-top: 44px; }
+.pending-group:first-of-type { margin-top: 20px; }
+/* El encabezado del grupo es una banda: se distingue de lejos de los pasos que tiene adentro */
+.pending-group-title {
+  display: flex; align-items: center; gap: 14px; margin: 0 0 6px; padding: 14px 16px;
+  font: 600 16px/1.3 var(--display); color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--radius);
+}
+.pending-group-title .group-n { font-size: 15px; width: 32px; height: 32px; background: var(--text); color: var(--bg); box-shadow: none; }
+.pending-group-title > span:nth-child(2) { flex: 1; }
 .pending-group ul { list-style: none; margin: 0; padding: 0; }
 .pending-group li + li { border-top: 1px solid var(--line); }
 .pending-item {
