@@ -1552,6 +1552,968 @@ EOF
 
 commit "2026-10-16T14:30:00-03:00" "refactor: simplificar validación de cuotas y ajustar textos"
 
+########################################################################
+# main #4: cupones de descuento (nacen con dos bugs: el descuento se calcula
+# sobre el precio con IVA y se pueden sumar varios cupones)
+#
+# Va al final y sobre main, así las ramas de arriba no cambian de SHA ni de
+# merge-base.
+########################################################################
+
+git checkout -q main
+
+w db/migrations/001_coupons.sql <<'EOF'
+CREATE TABLE coupons (
+  code    TEXT PRIMARY KEY,
+  percent INTEGER NOT NULL CHECK (percent BETWEEN 1 AND 100)
+);
+
+CREATE TABLE order_coupons (
+  order_id    TEXT NOT NULL,
+  coupon_code TEXT NOT NULL REFERENCES coupons (code),
+  PRIMARY KEY (order_id, coupon_code)
+);
+EOF
+
+w src/types.ts <<'EOF'
+import { Cents } from "./money";
+
+export interface Coupon {
+  code: string;
+  /** 10 = 10% */
+  percent: number;
+}
+
+/** Cómo queda el precio después de aplicar cupones. */
+export interface Pricing {
+  subtotal: Cents;
+  discount: Cents;
+  net: Cents;
+  iva: Cents;
+  total: Cents;
+  couponCodes: string[];
+}
+EOF
+
+w src/tax.ts <<'EOF'
+import { IVA_RATE } from "./config";
+import { Cents } from "./money";
+
+/** Precio con IVA incluido -> neto sin IVA. */
+export function netFromGross(gross: Cents): Cents {
+  return Math.round(gross / (1 + IVA_RATE));
+}
+
+/** Neto sin IVA -> precio final. */
+export function addIva(net: Cents): Cents {
+  return net + Math.round(net * IVA_RATE);
+}
+EOF
+
+w src/coupons.ts <<'EOF'
+import { Cents, percentOf } from "./money";
+import { addIva, netFromGross } from "./tax";
+import { Coupon, Pricing } from "./types";
+
+/**
+ * Aplica los cupones al subtotal del carrito.
+ * `gross` viene con IVA incluido (precios de catálogo).
+ */
+export function priceWithCoupons(gross: Cents, coupons: Coupon[]): Pricing {
+  let discount = 0;
+  for (const coupon of coupons) {
+    discount += percentOf(gross, coupon.percent);
+  }
+  const net = netFromGross(gross) - discount;
+  const total = addIva(net);
+  return {
+    subtotal: gross,
+    discount,
+    net,
+    iva: total - net,
+    total,
+    couponCodes: coupons.map((c) => c.code),
+  };
+}
+EOF
+
+w src/db/coupons.ts <<'EOF'
+import { Coupon } from "../types";
+
+/** Tabla coupons. En memoria para la demo. */
+const rows = [
+  { code: "VERANO10", percent: 10 },
+  { code: "BIENVENIDA15", percent: 15 },
+];
+
+export function findCoupon(code: string): Coupon | null {
+  const row = rows.find((r) => r.code === code);
+  if (!row) return null;
+  return { code: row.code, percent: row.percent };
+}
+
+/** Para el panel de admin: todos los códigos cargados. */
+export function listCouponCodes(): string[] {
+  return rows.map((r) => r.code).sort();
+}
+
+export function couponExists(code: string): boolean {
+  return findCoupon(code) !== null;
+}
+EOF
+
+w src/emails/receipt.ts <<'EOF'
+import { SHOP } from "../config";
+import { COPY } from "../copy";
+import { InstallmentQuote } from "../installments";
+import { Invoice } from "../invoice";
+import { formatARS } from "../money";
+
+export interface ReceiptEmail {
+  to: string;
+  subject: string;
+  text: string;
+}
+
+export function renderReceipt(invoice: Invoice, quote: InstallmentQuote): ReceiptEmail {
+  const lines = [
+    COPY.receipt.thanks,
+    "",
+    `${COPY.receipt.total}: ${formatARS(invoice.total)}`,
+    `${COPY.receipt.installments}: ${quote.count} x ${formatARS(quote.perInstallment)}`,
+    "",
+    `${SHOP.name} | ${SHOP.email}`,
+  ];
+  return {
+    to: invoice.customerEmail,
+    subject: COPY.receipt.subject(invoice.number),
+    text: lines.join("\n"),
+  };
+}
+EOF
+
+w src/copy.ts <<'EOF'
+export const COPY = {
+  checkout: {
+    title: "Finalizá tu compra",
+    payButton: "Pagar",
+    installmentsLabel: "Cuotas",
+    success: (count: number, amount: string) =>
+      count === 1 ? `Listo! Pagaste ${amount}.` : `Listo! Vas a pagar ${count} cuotas de ${amount}.`,
+  },
+  errors: {
+    invalidEmail: "El email no es valido",
+    emptyCart: "Tu carrito esta vacio",
+    invalidAmount: "Hay un precio que no pudimos leer",
+    invalidInstallments: "Cantidad de cuotas invalida",
+    planUnavailable: "Ese plan de cuotas no esta disponible",
+  },
+  invoice: {
+    header: "Factura B",
+    customer: "Cliente",
+    discount: "Descuento",
+    surcharge: "Recargo por cuotas",
+    net: "Neto gravado",
+    tax: "IVA 21%",
+    total: "Total",
+  },
+  receipt: {
+    subject: (number: string) => `Tu compra ${number}`,
+    thanks: "Gracias por tu compra!",
+    total: "Total",
+    installments: "Cuotas",
+  },
+} as const;
+EOF
+
+w src/invoice.ts <<'EOF'
+import { CartItem, lineTotal } from "./cart";
+import { IVA_RATE, SHOP } from "./config";
+import { COPY } from "./copy";
+import { InstallmentQuote } from "./installments";
+import { Cents, formatARS, fromCents, toCents } from "./money";
+import { Pricing } from "./types";
+
+export interface InvoiceLine {
+  description: string;
+  amount: Cents;
+}
+
+export interface Invoice {
+  number: string;
+  issuedAt: string;
+  customerEmail: string;
+  lines: InvoiceLine[];
+  net: Cents;
+  tax: Cents;
+  total: Cents;
+}
+
+export interface InvoiceInput {
+  number: string;
+  issuedAt: string;
+  customerEmail: string;
+  items: CartItem[];
+  pricing: Pricing;
+  quote?: InstallmentQuote;
+}
+
+/** Precio final con IVA incluido -> neto gravado. */
+export function netFromGross(gross: Cents): Cents {
+  return toCents(fromCents(gross) / (1 + IVA_RATE));
+}
+
+export function buildInvoice(input: InvoiceInput): Invoice {
+  const lines: InvoiceLine[] = input.items.map((item) => ({
+    description: `${item.quantity} x ${item.name}`,
+    amount: lineTotal(item),
+  }));
+
+  let total = input.pricing.total;
+  if (input.quote && input.quote.surcharge > 0) {
+    lines.push({
+      description: `${COPY.invoice.surcharge} (${input.quote.count} cuotas)`,
+      amount: input.quote.surcharge,
+    });
+    total += input.quote.surcharge;
+  }
+
+  const net = netFromGross(total);
+  return {
+    number: input.number,
+    issuedAt: input.issuedAt,
+    customerEmail: input.customerEmail,
+    lines,
+    net,
+    tax: total - net,
+    total,
+  };
+}
+
+export function renderInvoiceText(inv: Invoice): string {
+  const rows = inv.lines.map((l) => `${l.description.padEnd(32)} ${formatARS(l.amount)}`);
+  return [
+    `${SHOP.name} - ${COPY.invoice.header} ${inv.number}`,
+    `${SHOP.email} | CUIT ${SHOP.cuit}`,
+    `${COPY.invoice.customer}: ${inv.customerEmail}`,
+    "",
+    ...rows,
+    "",
+    `${COPY.invoice.net}: ${formatARS(inv.net)}`,
+    `${COPY.invoice.tax}: ${formatARS(inv.tax)}`,
+    `${COPY.invoice.total}: ${formatARS(inv.total)}`,
+  ].join("\n");
+}
+EOF
+
+w src/api/checkout.ts <<'EOF'
+import { CartItem, cartTotals } from "../cart";
+import { COPY } from "../copy";
+import { priceWithCoupons } from "../coupons";
+import { findCoupon } from "../db/coupons";
+import { ReceiptEmail, renderReceipt } from "../emails/receipt";
+import { isValidInstallmentCount, quoteInstallments } from "../installments";
+import { Invoice, buildInvoice } from "../invoice";
+import { formatARS, parseARS } from "../money";
+import { Coupon } from "../types";
+
+export interface CheckoutRequest {
+  email: string;
+  items: Array<{ sku: string; name: string; price: string; quantity: number }>;
+  installments: number;
+  couponCodes?: string[];
+}
+
+export type CheckoutResponse =
+  | {
+      status: 200;
+      body: {
+        ok: true;
+        total: string;
+        perInstallment: string;
+        message: string;
+        invoice: Invoice;
+        receipt: ReceiptEmail;
+      };
+    }
+  | { status: 400 | 422; body: { ok: false; error: string } };
+
+function fail(status: 400 | 422, error: string): CheckoutResponse {
+  return { status, body: { ok: false, error } };
+}
+
+function invoiceNumber(now: Date): string {
+  return `0001-${String(now.getTime()).slice(-8)}`;
+}
+
+export function handleCheckout(req: CheckoutRequest, now: Date = new Date()): CheckoutResponse {
+  if (!req.email || !req.email.includes("@")) {
+    return fail(400, COPY.errors.invalidEmail);
+  }
+  if (!req.items || req.items.length === 0) {
+    return fail(400, COPY.errors.emptyCart);
+  }
+  if (!isValidInstallmentCount(req.installments)) {
+    return fail(422, COPY.errors.invalidInstallments);
+  }
+
+  let items: CartItem[];
+  try {
+    items = req.items.map((i) => ({
+      sku: i.sku,
+      name: i.name,
+      unitPrice: parseARS(i.price),
+      quantity: i.quantity,
+    }));
+  } catch {
+    return fail(400, COPY.errors.invalidAmount);
+  }
+
+  const totals = cartTotals(items);
+  const coupons = (req.couponCodes ?? [])
+    .map((code) => findCoupon(code))
+    .filter((c): c is Coupon => c !== null);
+  const pricing = priceWithCoupons(totals.subtotal, coupons);
+
+  let quote;
+  try {
+    quote = quoteInstallments(pricing.total, req.installments);
+  } catch {
+    return fail(422, COPY.errors.planUnavailable);
+  }
+
+  const invoice = buildInvoice({
+    number: invoiceNumber(now),
+    issuedAt: now.toISOString(),
+    customerEmail: req.email,
+    items,
+    pricing,
+    quote,
+  });
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      total: formatARS(quote.total),
+      perInstallment: formatARS(quote.perInstallment),
+      message: COPY.checkout.success(quote.count, formatARS(quote.perInstallment)),
+      invoice,
+      receipt: renderReceipt(invoice, quote),
+    },
+  };
+}
+EOF
+
+commit "2026-10-18T10:00:00-03:00" "feat: cupones de descuento en el checkout"
+
+########################################################################
+# fix/cupones-acumulados: PR grande, muchos archivos y un bug escondido
+# (isCouponActive usa < y el cupón deja de valer su último día)
+########################################################################
+
+branch fix/cupones-acumulados
+
+w db/migrations/002_coupons_vigencia.sql <<'EOF'
+-- Vigencia y compra mínima de cada cupón
+ALTER TABLE coupons ADD COLUMN min_subtotal_cents INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE coupons ADD COLUMN expires_on DATE;
+
+UPDATE coupons SET expires_on = '2026-12-31' WHERE expires_on IS NULL;
+ALTER TABLE coupons ALTER COLUMN expires_on SET NOT NULL;
+
+-- Un solo cupón por orden
+CREATE UNIQUE INDEX order_coupons_one_per_order ON order_coupons (order_id);
+EOF
+
+w src/config.ts <<'EOF'
+export const IVA_RATE = 0.21;
+export const MAX_INSTALLMENTS = 12;
+export const MAX_COUPONS_PER_ORDER = 1;
+export const TIMEZONE = "America/Argentina/Buenos_Aires";
+
+export const INSTALLMENT_PLANS = [
+  { count: 1, surchargeRate: 0 },
+  { count: 3, surchargeRate: 0.1 },
+  { count: 6, surchargeRate: 0.2 },
+  { count: 12, surchargeRate: 0.45 },
+];
+
+export const SHOP = {
+  name: "Almacén Demo",
+  email: "ventas@example.com",
+  cuit: "30-00000000-0",
+};
+EOF
+
+w src/types.ts <<'EOF'
+import { Cents } from "./money";
+
+export interface Coupon {
+  code: string;
+  /** 10 = 10% */
+  percent: number;
+  /** Compra mínima, sin IVA, para que el cupón valga */
+  minSubtotal: Cents;
+  /** Último día en que vale, "AAAA-MM-DD" */
+  expiresOn: string;
+}
+
+/** Cómo queda el precio después de aplicar el cupón. */
+export interface Pricing {
+  /** Sin IVA, antes del descuento */
+  subtotal: Cents;
+  /** Sin IVA */
+  discount: Cents;
+  /** Lo que se ahorra el cliente, con IVA */
+  discountWithIva: Cents;
+  net: Cents;
+  iva: Cents;
+  total: Cents;
+  couponCode: string | null;
+}
+EOF
+
+git mv src/db/coupons.ts src/db/coupons-repo.ts
+w src/db/coupons-repo.ts <<'EOF'
+import { Coupon } from "../types";
+
+/** Tabla coupons. En memoria para la demo. */
+const rows = [
+  { code: "VERANO10", percent: 10, min_subtotal_cents: 2000000, expires_on: "2026-12-31" },
+  { code: "BIENVENIDA15", percent: 15, min_subtotal_cents: 0, expires_on: "2026-11-30" },
+];
+
+export function findCoupon(code: string): Coupon | null {
+  const row = rows.find((r) => r.code === code.trim().toUpperCase());
+  if (!row) return null;
+  return { code: row.code, percent: row.percent, minSubtotal: row.min_subtotal_cents, expiresOn: row.expires_on };
+}
+
+/** Para el panel de admin: todos los códigos cargados. */
+export function listCouponCodes(): string[] {
+  return rows.map((r) => r.code).sort();
+}
+
+export function couponExists(code: string): boolean {
+  return findCoupon(code) !== null;
+}
+EOF
+
+w src/coupons.ts <<'EOF'
+import { TIMEZONE } from "./config";
+import { Cents, percentOf } from "./money";
+import { addIva, netFromGross } from "./tax";
+import { Coupon, Pricing } from "./types";
+
+/** Fecha de hoy en Argentina, "AAAA-MM-DD". */
+function localDay(now: Date): string {
+  return now.toLocaleDateString("sv-SE", { timeZone: TIMEZONE });
+}
+
+/** `expiresOn` es el último día en que el cupón vale. */
+export function isCouponActive(coupon: Coupon, now: Date): boolean {
+  return localDay(now) < coupon.expiresOn;
+}
+
+/** El mínimo se compara contra el subtotal sin IVA. */
+export function meetsMinimum(coupon: Coupon, subtotal: Cents): boolean {
+  return subtotal >= coupon.minSubtotal;
+}
+
+/**
+ * Precio final con un cupón como máximo.
+ * El descuento sale del subtotal sin IVA y el IVA se calcula sobre lo que queda.
+ */
+export function priceWithCoupon(gross: Cents, coupon: Coupon | null): Pricing {
+  const subtotal = netFromGross(gross);
+  if (!coupon) {
+    return { subtotal, discount: 0, discountWithIva: 0, net: subtotal, iva: gross - subtotal, total: gross, couponCode: null };
+  }
+  const discount = percentOf(subtotal, coupon.percent);
+  const net = subtotal - discount;
+  const total = addIva(net);
+  return {
+    subtotal,
+    discount,
+    discountWithIva: gross - total,
+    net,
+    iva: total - net,
+    total,
+    couponCode: coupon.code,
+  };
+}
+EOF
+
+w src/api/coupons.ts <<'EOF'
+import { COPY } from "../copy";
+import { isCouponActive, meetsMinimum, priceWithCoupon } from "../coupons";
+import { findCoupon } from "../db/coupons-repo";
+import { formatARS } from "../money";
+import { netFromGross } from "../tax";
+
+export interface ValidateCouponRequest {
+  code: string;
+  /** Subtotal del carrito en centavos, con IVA (lo que ve el cliente) */
+  subtotal: number;
+}
+
+export type ValidateCouponResponse =
+  | { status: 200; body: { ok: true; code: string; discount: string; total: string } }
+  | { status: 404 | 422; body: { ok: false; error: string } };
+
+/** POST /api/coupons/validate: el front lo llama cuando el cliente carga el cupón. */
+export function handleValidateCoupon(req: ValidateCouponRequest, now: Date = new Date()): ValidateCouponResponse {
+  const coupon = findCoupon(req.code);
+  if (!coupon) {
+    return { status: 404, body: { ok: false, error: COPY.errors.couponNotFound } };
+  }
+  if (!isCouponActive(coupon, now)) {
+    return { status: 422, body: { ok: false, error: COPY.errors.couponExpired } };
+  }
+  if (!meetsMinimum(coupon, netFromGross(req.subtotal))) {
+    return { status: 422, body: { ok: false, error: COPY.errors.couponMinimum(formatARS(coupon.minSubtotal)) } };
+  }
+
+  const pricing = priceWithCoupon(req.subtotal, coupon);
+  return {
+    status: 200,
+    body: { ok: true, code: coupon.code, discount: formatARS(pricing.discountWithIva), total: formatARS(pricing.total) },
+  };
+}
+EOF
+
+w src/copy.ts <<'EOF'
+export const COPY = {
+  checkout: {
+    title: "Finalizá tu compra",
+    payButton: "Pagar",
+    installmentsLabel: "Cuotas",
+    success: (count: number, amount: string) =>
+      count === 1 ? `Listo! Pagaste ${amount}.` : `Listo! Vas a pagar ${count} cuotas de ${amount}.`,
+  },
+  errors: {
+    invalidEmail: "El email no es valido",
+    emptyCart: "Tu carrito esta vacio",
+    invalidAmount: "Hay un precio que no pudimos leer",
+    invalidInstallments: "Cantidad de cuotas invalida",
+    planUnavailable: "Ese plan de cuotas no esta disponible",
+    tooManyCoupons: "Solo se puede usar un cupón por compra",
+    couponNotFound: "Ese cupón no existe",
+    couponExpired: "Ese cupón ya venció",
+    couponMinimum: (min: string) => `El cupón vale para compras desde ${min} sin IVA`,
+  },
+  invoice: {
+    header: "Factura B",
+    customer: "Cliente",
+    coupon: "Cupón",
+    surcharge: "Recargo por cuotas",
+    net: "Neto gravado",
+    tax: "IVA 21%",
+    total: "Total",
+  },
+  receipt: {
+    subject: (number: string) => `Tu compra ${number}`,
+    thanks: "Gracias por tu compra!",
+    total: "Total",
+    coupon: "Cupón",
+    installments: "Cuotas",
+    savedPerInstallment: (amount: string) => `Ahorrás ${amount} en cada cuota`,
+  },
+} as const;
+EOF
+
+w src/coupons.test.ts <<'EOF'
+import { describe, expect, it } from "vitest";
+import { isCouponActive, meetsMinimum, priceWithCoupon } from "./coupons";
+import { Coupon } from "./types";
+
+const verano: Coupon = { code: "VERANO10", percent: 10, minSubtotal: 2000000, expiresOn: "2026-12-31" };
+
+describe("priceWithCoupon", () => {
+  it("descuenta sobre el subtotal sin IVA", () => {
+    const p = priceWithCoupon(12100000, verano);
+    expect(p.subtotal).toBe(10000000);
+    expect(p.discount).toBe(1000000);
+    expect(p.iva).toBe(1890000);
+    expect(p.total).toBe(10890000);
+  });
+
+  it("sin cupón cobra el precio de lista", () => {
+    expect(priceWithCoupon(1999, null).total).toBe(1999);
+  });
+});
+
+describe("isCouponActive", () => {
+  it("vale antes del vencimiento", () => {
+    expect(isCouponActive(verano, new Date("2026-12-15T12:00:00-03:00"))).toBe(true);
+  });
+
+  it("no vale después del vencimiento", () => {
+    expect(isCouponActive(verano, new Date("2027-01-02T12:00:00-03:00"))).toBe(false);
+  });
+});
+
+describe("meetsMinimum", () => {
+  it("pide el mínimo sin IVA", () => {
+    expect(meetsMinimum(verano, 2000000)).toBe(true);
+    expect(meetsMinimum(verano, 1999999)).toBe(false);
+  });
+});
+EOF
+
+commit "2026-10-20T11:00:00-03:00" "fix: un solo cupón por compra, con vigencia y monto mínimo"
+
+w src/cart.ts <<'EOF'
+import { Cents, addCents, toCents } from "./money";
+
+export interface CartItem {
+  sku: string;
+  name: string;
+  /** Precio unitario en pesos, tal cual viene del catálogo. */
+  unitPrice: number;
+  quantity: number;
+}
+
+export interface CartTotals {
+  /** Suma de precios de catálogo, con IVA incluido */
+  subtotal: Cents;
+}
+
+export function lineTotal(item: CartItem): Cents {
+  // FIXME: toCents(19.99) da 1998, se pierde un centavo por item.
+  // Le sumamos un epsilon hasta que alguien lo arregle en money.ts.
+  return toCents(item.unitPrice + 0.001) * item.quantity;
+}
+
+export function cartTotals(items: CartItem[]): CartTotals {
+  return { subtotal: addCents(...items.map(lineTotal)) };
+}
+EOF
+
+w src/installments.ts <<'EOF'
+import { INSTALLMENT_PLANS, MAX_INSTALLMENTS } from "./config";
+import { Cents, fromCents, toCents } from "./money";
+
+export interface InstallmentQuote {
+  count: number;
+  surchargeRate: number;
+  surcharge: Cents;
+  total: Cents;
+  perInstallment: Cents;
+  lastInstallment: Cents;
+  /** Parte del descuento del cupón que le toca a cada cuota */
+  discountPerInstallment: Cents;
+  lastDiscount: Cents;
+}
+
+export function isValidInstallmentCount(count: number): boolean {
+  return Number.isInteger(count) && count >= 1 && count <= MAX_INSTALLMENTS;
+}
+
+export function quoteInstallments(amount: Cents, count: number, discount: Cents = 0): InstallmentQuote {
+  const plan = INSTALLMENT_PLANS.find((p) => p.count === count);
+  if (!plan) {
+    throw new Error(`No hay plan de ${count} cuotas`);
+  }
+
+  // mismo parche que en cart.ts: sin el epsilon el recargo pierde un centavo
+  const surcharge = toCents(fromCents(amount) * plan.surchargeRate + 0.001);
+  const total = amount + surcharge;
+  const perInstallment = Math.floor(total / count);
+  const lastInstallment = total - perInstallment * (count - 1);
+  const discountPerInstallment = Math.floor(discount / count);
+  const lastDiscount = discount - discountPerInstallment * (count - 1);
+
+  return {
+    count,
+    surchargeRate: plan.surchargeRate,
+    surcharge,
+    total,
+    perInstallment,
+    lastInstallment,
+    discountPerInstallment,
+    lastDiscount,
+  };
+}
+EOF
+
+w src/invoice.ts <<'EOF'
+import { CartItem, lineTotal } from "./cart";
+import { SHOP } from "./config";
+import { COPY } from "./copy";
+import { InstallmentQuote } from "./installments";
+import { Cents, formatARS } from "./money";
+import { netFromGross } from "./tax";
+import { Pricing } from "./types";
+
+export interface InvoiceLine {
+  description: string;
+  amount: Cents;
+}
+
+export interface Invoice {
+  number: string;
+  issuedAt: string;
+  customerEmail: string;
+  lines: InvoiceLine[];
+  coupon: { code: string; amount: Cents } | null;
+  net: Cents;
+  tax: Cents;
+  total: Cents;
+}
+
+export interface InvoiceInput {
+  number: string;
+  issuedAt: string;
+  customerEmail: string;
+  items: CartItem[];
+  pricing: Pricing;
+  quote?: InstallmentQuote;
+}
+
+export function buildInvoice(input: InvoiceInput): Invoice {
+  const lines: InvoiceLine[] = input.items.map((item) => ({
+    description: `${item.quantity} x ${item.name}`,
+    amount: lineTotal(item),
+  }));
+
+  const { pricing } = input;
+  const coupon = pricing.couponCode ? { code: pricing.couponCode, amount: pricing.discountWithIva } : null;
+  if (coupon) {
+    lines.push({ description: `${COPY.invoice.coupon} ${coupon.code}`, amount: -coupon.amount });
+  }
+
+  let total = pricing.total;
+  if (input.quote && input.quote.surcharge > 0) {
+    lines.push({
+      description: `${COPY.invoice.surcharge} (${input.quote.count} cuotas)`,
+      amount: input.quote.surcharge,
+    });
+    total += input.quote.surcharge;
+  }
+
+  const net = netFromGross(total);
+  return {
+    number: input.number,
+    issuedAt: input.issuedAt,
+    customerEmail: input.customerEmail,
+    lines,
+    coupon,
+    net,
+    tax: total - net,
+    total,
+  };
+}
+
+export function renderInvoiceText(inv: Invoice): string {
+  const rows = inv.lines.map((l) => `${l.description.padEnd(32)} ${formatARS(l.amount)}`);
+  return [
+    `${SHOP.name} - ${COPY.invoice.header} ${inv.number}`,
+    `${SHOP.email} | CUIT ${SHOP.cuit}`,
+    `${COPY.invoice.customer}: ${inv.customerEmail}`,
+    "",
+    ...rows,
+    "",
+    `${COPY.invoice.net}: ${formatARS(inv.net)}`,
+    `${COPY.invoice.tax}: ${formatARS(inv.tax)}`,
+    `${COPY.invoice.total}: ${formatARS(inv.total)}`,
+  ].join("\n");
+}
+EOF
+
+w src/emails/receipt.ts <<'EOF'
+import { SHOP } from "../config";
+import { COPY } from "../copy";
+import { InstallmentQuote } from "../installments";
+import { Invoice } from "../invoice";
+import { formatARS } from "../money";
+
+export interface ReceiptEmail {
+  to: string;
+  subject: string;
+  text: string;
+}
+
+export function renderReceipt(invoice: Invoice, quote: InstallmentQuote): ReceiptEmail {
+  const coupon = invoice.coupon
+    ? [`${COPY.receipt.coupon} ${invoice.coupon.code}: -${formatARS(invoice.coupon.amount)}`]
+    : [];
+  const saved =
+    quote.discountPerInstallment > 0 ? [COPY.receipt.savedPerInstallment(formatARS(quote.discountPerInstallment))] : [];
+  const lines = [
+    COPY.receipt.thanks,
+    "",
+    ...coupon,
+    `${COPY.receipt.total}: ${formatARS(invoice.total)}`,
+    `${COPY.receipt.installments}: ${quote.count} x ${formatARS(quote.perInstallment)}`,
+    ...saved,
+    "",
+    `${SHOP.name} | ${SHOP.email}`,
+  ];
+  return {
+    to: invoice.customerEmail,
+    subject: COPY.receipt.subject(invoice.number),
+    text: lines.join("\n"),
+  };
+}
+EOF
+
+w src/api/checkout.ts <<'EOF'
+import { CartItem, cartTotals } from "../cart";
+import { MAX_COUPONS_PER_ORDER } from "../config";
+import { COPY } from "../copy";
+import { isCouponActive, meetsMinimum, priceWithCoupon } from "../coupons";
+import { findCoupon } from "../db/coupons-repo";
+import { ReceiptEmail, renderReceipt } from "../emails/receipt";
+import { isValidInstallmentCount, quoteInstallments } from "../installments";
+import { Invoice, buildInvoice } from "../invoice";
+import { formatARS, parseARS } from "../money";
+import { netFromGross } from "../tax";
+import { Coupon } from "../types";
+
+export interface CheckoutRequest {
+  email: string;
+  items: Array<{ sku: string; name: string; price: string; quantity: number }>;
+  installments: number;
+  couponCodes?: string[];
+}
+
+export type CheckoutResponse =
+  | {
+      status: 200;
+      body: {
+        ok: true;
+        total: string;
+        perInstallment: string;
+        message: string;
+        invoice: Invoice;
+        receipt: ReceiptEmail;
+      };
+    }
+  | { status: 400 | 422; body: { ok: false; error: string } };
+
+function fail(status: 400 | 422, error: string): CheckoutResponse {
+  return { status, body: { ok: false, error } };
+}
+
+function invoiceNumber(now: Date): string {
+  return `0001-${String(now.getTime()).slice(-8)}`;
+}
+
+export function handleCheckout(req: CheckoutRequest, now: Date = new Date()): CheckoutResponse {
+  if (!req.email || !req.email.includes("@")) {
+    return fail(400, COPY.errors.invalidEmail);
+  }
+  if (!req.items || req.items.length === 0) {
+    return fail(400, COPY.errors.emptyCart);
+  }
+  if (!isValidInstallmentCount(req.installments)) {
+    return fail(422, COPY.errors.invalidInstallments);
+  }
+
+  let items: CartItem[];
+  try {
+    items = req.items.map((i) => ({
+      sku: i.sku,
+      name: i.name,
+      unitPrice: parseARS(i.price),
+      quantity: i.quantity,
+    }));
+  } catch {
+    return fail(400, COPY.errors.invalidAmount);
+  }
+
+  const codes = req.couponCodes ?? [];
+  if (codes.length > MAX_COUPONS_PER_ORDER) {
+    return fail(422, COPY.errors.tooManyCoupons);
+  }
+
+  const totals = cartTotals(items);
+  let coupon: Coupon | null = null;
+  if (codes.length === 1) {
+    coupon = findCoupon(codes[0]);
+    if (!coupon) {
+      return fail(422, COPY.errors.couponNotFound);
+    }
+    if (!isCouponActive(coupon, now)) {
+      return fail(422, COPY.errors.couponExpired);
+    }
+    if (!meetsMinimum(coupon, netFromGross(totals.subtotal))) {
+      return fail(422, COPY.errors.couponMinimum(formatARS(coupon.minSubtotal)));
+    }
+  }
+  const pricing = priceWithCoupon(totals.subtotal, coupon);
+
+  let quote;
+  try {
+    quote = quoteInstallments(pricing.total, req.installments, pricing.discountWithIva);
+  } catch {
+    return fail(422, COPY.errors.planUnavailable);
+  }
+
+  const invoice = buildInvoice({
+    number: invoiceNumber(now),
+    issuedAt: now.toISOString(),
+    customerEmail: req.email,
+    items,
+    pricing,
+    quote,
+  });
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      total: formatARS(quote.total),
+      perInstallment: formatARS(quote.perInstallment),
+      message: COPY.checkout.success(quote.count, formatARS(quote.perInstallment)),
+      invoice,
+      receipt: renderReceipt(invoice, quote),
+    },
+  };
+}
+EOF
+
+w src/invoice.test.ts <<'EOF'
+import { describe, expect, it } from "vitest";
+import { priceWithCoupon } from "./coupons";
+import { quoteInstallments } from "./installments";
+import { buildInvoice, renderInvoiceText } from "./invoice";
+
+const items = [{ sku: "P1", name: "Parrilla portátil", unitPrice: 121000, quantity: 1 }];
+const verano = { code: "VERANO10", percent: 10, minSubtotal: 0, expiresOn: "2026-12-31" };
+
+describe("buildInvoice con cupón", () => {
+  const pricing = priceWithCoupon(12100000, verano);
+  const quote = quoteInstallments(pricing.total, 3, pricing.discountWithIva);
+  const inv = buildInvoice({
+    number: "0001-00000001",
+    issuedAt: "2026-10-20T12:00:00.000Z",
+    customerEmail: "cliente@example.com",
+    items,
+    pricing,
+    quote,
+  });
+
+  it("muestra la línea del cupón", () => {
+    expect(inv.coupon).toEqual({ code: "VERANO10", amount: 1210000 });
+    expect(renderInvoiceText(inv)).toContain("Cupón VERANO10");
+  });
+
+  it("las líneas suman el total", () => {
+    const sum = inv.lines.reduce((acc, l) => acc + l.amount, 0);
+    expect(sum).toBe(inv.total);
+  });
+
+  it("reparte el ahorro en las cuotas", () => {
+    expect(quote.discountPerInstallment * 2 + quote.lastDiscount).toBe(1210000);
+  });
+});
+EOF
+
+commit "2026-10-20T15:30:00-03:00" "fix: descuento antes del IVA, prorrateado en cuotas y visible en factura y recibo"
+
 git checkout -q main
 echo "listo: $TARGET"
 git log --oneline --all --graph
