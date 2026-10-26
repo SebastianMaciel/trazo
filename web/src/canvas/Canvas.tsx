@@ -4,6 +4,7 @@ import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
 import { INTENT_ZOOM, layoutAnalysis, type Layout } from "../layout";
 import { computeSteps } from "../steps";
+import { useCssVar } from "../theme";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { DecisionNode, type DecisionNodeData } from "./DecisionNode";
 import { EndNode, type EndNodeData } from "./EndNode";
@@ -21,6 +22,10 @@ export function Canvas() {
   const analysis = useMemo(() => visibleAnalysis(raw, show), [raw, show]);
   const [layout, setLayout] = useState<Layout | null>(null);
   const flow = useReactFlow();
+  const colorDel = useCssVar("--del");
+  const colorAccent = useCssVar("--accent");
+  const colorWire = useCssVar("--wire");
+  const colorDot = useCssVar("--dot");
   const intent = useStore((s) => s.transform[2] < INTENT_ZOOM);
 
   useEffect(() => {
@@ -95,7 +100,7 @@ export function Canvas() {
     () =>
       graph.wires.map((w) => {
         const active = wireActive(graph, w, selected, focus);
-        const color = w.outcome?.end?.tone === "error" ? "#fb7185" : active ? "#f5b942" : "#6c7fb3";
+        const color = w.outcome?.end?.tone === "error" ? colorDel : active ? colorAccent : colorWire;
         const marker = { type: MarkerType.ArrowClosed, width: 16, height: 16, color };
         return {
           id: w.id,
@@ -110,7 +115,7 @@ export function Canvas() {
           data: { wire: w, active, dimmed: !!selected && !active, points: layout?.wires[w.id] },
         };
       }),
-    [graph, selected, focus, layout],
+    [graph, selected, focus, layout, colorDel, colorAccent, colorWire],
   );
 
   // La cámara encuadra en el hueco libre entre los paneles flotantes, no en el centro de la pantalla
@@ -185,7 +190,7 @@ export function Canvas() {
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
     >
-      <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#24345e" />
+      <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color={colorDot} />
     </ReactFlow>
   );
 }

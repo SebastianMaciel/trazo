@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cases } from "../mock";
+import { ThemePicker } from "./ThemePicker";
 import { useReview, useVisible } from "../store";
 
 export function TopBar() {
@@ -33,6 +34,7 @@ export function TopBar() {
       <button className="btn" onClick={() => select(null)} disabled={!selected}>
         Vista general
       </button>
+      <ThemePicker />
       <button className={`btn btn-ghost ${show.index ? "is-on" : ""}`} onClick={() => toggleShow("index")}>
         ☰ Índice
       </button>
