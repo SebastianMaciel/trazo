@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cases } from "../mock";
-import { layerOf, useReview, useVisible, type Layer } from "../store";
+import { useReview, useVisible } from "../store";
 
 export function TopBar() {
   const { analysis, selected, verdicts, show, select, toggleShow } = useReview();
@@ -8,7 +8,6 @@ export function TopBar() {
   const ok = visible.tour.filter((id) => verdicts[id] === "ok").length;
   const doubts = visible.tour.filter((id) => verdicts[id] === "doubt").length;
   const total = Math.max(1, visible.tour.length);
-  const count = (layer: Layer) => analysis.blocks.filter((b) => layerOf(analysis, b) === layer).length;
 
   return (
     <header className="topbar">
@@ -19,17 +18,6 @@ export function TopBar() {
         <span className="arrow">←</span>
         <BranchPicker head={analysis.head} />
       </span>
-
-      <div className="layers">
-        <span className="layers-label">Mostrar</span>
-        {(["tests", "minor"] as const).map((l) => (
-          <button key={l} className={`toggle ${show[l] ? "is-on" : ""}`} onClick={() => toggleShow(l)} aria-pressed={show[l]}>
-            <span className="toggle-box">{show[l] ? "✓" : ""}</span>
-            {l === "tests" ? "Tests" : "Menores"}
-            <span className="toggle-count">{count(l)}</span>
-          </button>
-        ))}
-      </div>
 
       <div className="topbar-progress">
         <span>

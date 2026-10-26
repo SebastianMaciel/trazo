@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useReview, useVisible } from "../store";
+import { layerOf, useReview, useVisible } from "../store";
 
 export function Sidebar() {
-  const { selected, verdicts, select } = useReview();
+  const { analysis: raw, selected, verdicts, select, show, toggleShow } = useReview();
   const analysis = useVisible();
   const [q, setQ] = useState("");
   const term = q.trim().toLowerCase();
-
+  const count = (layer: "tests" | "minor") => raw.blocks.filter((b) => layerOf(raw, b) === layer).length;
 
   return (
     <aside className="sidebar">
@@ -48,6 +48,16 @@ export function Sidebar() {
           );
         })}
       </nav>
+      {/* Lo que el recorrido deja afuera por default, al pie para no competir con la lista */}
+      <div className="layers">
+        {(["tests", "minor"] as const).map((l) => (
+          <button key={l} className={`layer-row ${show[l] ? "is-on" : ""}`} onClick={() => toggleShow(l)} aria-pressed={show[l]}>
+            <span className="layer-switch" />
+            <span className="layer-name">{l === "tests" ? "Mostrar tests" : "Mostrar cambios menores"}</span>
+            <span className="tree-count">{count(l)}</span>
+          </button>
+        ))}
+      </div>
     </aside>
   );
 }

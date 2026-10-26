@@ -24,9 +24,9 @@ function Overview() {
       <p className="eyebrow">El cambio</p>
       <h1 className="detail-title">{analysis.title}</h1>
       <ol className="overview">
-        {analysis.groups.map((g) => (
+        {analysis.groups.map((g, i) => (
           <li key={g.id}>
-            <span className={`risk-dot risk-${g.risk}`} title={`riesgo ${g.risk}`} />
+            <span className={`group-n risk-${g.risk}`}>{i + 1}</span>
             <span>{g.title}</span>
           </li>
         ))}

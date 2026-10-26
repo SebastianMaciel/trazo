@@ -4,6 +4,8 @@ import { buildGraph, outHandle, type Graph } from "./graph";
 
 /** Debajo de este zoom las cards muestran solo el título grande */
 export const FAR_ZOOM = 0.55;
+/** Más lejos que esto solo se leen los grupos: la vista de intención */
+export const INTENT_ZOOM = 0.34;
 
 /** Geometría de la card: tiene que coincidir con el CSS de .block-head y .row */
 export const BLOCK_W = 340;

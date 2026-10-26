@@ -1,8 +1,8 @@
-import { Background, BackgroundVariant, MarkerType, MiniMap, PanOnScrollMode, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
+import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, useReactFlow, useStore, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
-import { layoutAnalysis, type Layout } from "../layout";
+import { INTENT_ZOOM, layoutAnalysis, type Layout } from "../layout";
 import { computeSteps } from "../steps";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { DecisionNode, type DecisionNodeData } from "./DecisionNode";
@@ -21,6 +21,7 @@ export function Canvas() {
   const analysis = useMemo(() => visibleAnalysis(raw, show), [raw, show]);
   const [layout, setLayout] = useState<Layout | null>(null);
   const flow = useReactFlow();
+  const intent = useStore((s) => s.transform[2] < INTENT_ZOOM);
 
   useEffect(() => {
     let alive = true;
@@ -57,7 +58,7 @@ export function Canvas() {
         selectable: false,
         draggable: false,
         zIndex: 0,
-        data: { group: g, done: ids.filter((id) => verdicts[id] === "ok").length, total: ids.length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
+        data: { group: g, n: analysis.groups.indexOf(g) + 1, done: ids.filter((id) => verdicts[id] === "ok").length, total: ids.length, warns: analysis.blocks.filter((b) => b.group === g.id && b.warnings?.length).length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
       };
     });
     const blocks: Node<BlockNodeData>[] = analysis.blocks.filter((b) => layout.nodes[b.id]).map((b) => {
@@ -157,11 +158,14 @@ export function Canvas() {
 
   return (
     <ReactFlow
+      className={intent ? "is-intent" : ""}
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       onNodeClick={(_, n) => {
+        // De lejos, tocar un grupo te acerca a ese grupo
+        if (n.type === "cluster" && intent) return void flow.fitView({ nodes: [{ id: n.id }], duration: 600, padding: 0.15, maxZoom: 0.9 });
         if (n.type !== "block" && n.type !== "decision") return;
         // La cámara se queda quieta salvo que lo que tocaste esté cortado o tapado por un panel
         const r = document.querySelector(`.react-flow__node[data-id="${CSS.escape(n.id)}"]`)!.getBoundingClientRect();
@@ -182,14 +186,6 @@ export function Canvas() {
       proOptions={{ hideAttribution: true }}
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color="#24345e" />
-      <MiniMap
-        pannable
-        zoomable
-        nodeColor={(n) => (n.type === "cluster" ? "rgba(140,160,210,0.12)" : n.type === "end" ? "#fb7185" : n.type === "decision" ? "#c4b5fd" : n.id === selected ? "#f5b942" : verdicts[n.id] === "ok" ? "#4ade80" : verdicts[n.id] === "doubt" ? "#f5b942" : "#6a7bb0")}
-        nodeStrokeWidth={0}
-        maskColor="rgba(6,10,22,0.7)"
-        className="minimap"
-      />
     </ReactFlow>
   );
 }

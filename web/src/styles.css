@@ -96,7 +96,7 @@ button.pill-head:hover { background: var(--panel-2); }
   background: var(--bg); color: var(--text); font: 14px var(--sans);
 }
 .filter::placeholder { color: var(--faint); }
-.tree { overflow: auto; padding: 4px 8px 16px; }
+.tree { flex: 1; min-height: 0; overflow: auto; padding: 4px 8px 16px; }
 .tree-group h3 {
   display: flex; align-items: center; gap: 8px; margin: 14px 8px 6px;
   font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
@@ -143,6 +143,15 @@ button.pill-head:hover { background: var(--panel-2); }
 .group-title { color: var(--text); }
 .group-progress { font-family: var(--mono); color: var(--muted); font-weight: 400; }
 .group.is-far { background: rgba(23, 34, 66, 0.6); }
+.group.is-intent { background: #141f3d; border-color: rgba(120, 140, 200, 0.45); cursor: zoom-in; }
+.group.is-intent:hover { border-color: var(--line-2); background: #18254a; }
+.group-intent { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.3em; padding: 0 0.8em; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
+.group-meta { font: 400 0.8em var(--mono); color: var(--muted); }
+.group-warns { color: var(--risk-alto); }
+/* Lejos de todo, los bloques y las flechas se esconden detrás de su grupo */
+.is-intent .react-flow__node-block, .is-intent .react-flow__node-decision, .is-intent .react-flow__node-end { opacity: 0; pointer-events: none; }
+.is-intent .react-flow__edge { opacity: 0; }
+.react-flow__node-block, .react-flow__node-decision, .react-flow__node-end, .react-flow__edge { transition: opacity 0.25s; }
 
 /* ---------- canvas: bloques ---------- */
 .block {
@@ -213,9 +222,6 @@ button.pill-head:hover { background: var(--panel-2); }
 .react-flow__edgelabel-renderer { z-index: 20; }
 .edge-label.is-dimmed { opacity: 0.4; }
 
-.minimap { background: var(--bg-2) !important; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.react-flow__minimap { right: 14px; bottom: 0; transition: right 0.25s; }
-.workspace.with-index .react-flow__minimap { right: 298px; }
 
 /* ---------- panel de detalle ---------- */
 .detail-scroll { flex: 1; min-height: 0; overflow: auto; }
@@ -278,17 +284,18 @@ button.pill-head:hover { background: var(--panel-2); }
 /* ---------- capas y progreso en la barra ---------- */
 .btn-ghost { background: none; border-color: transparent; color: var(--muted); }
 .btn-ghost.is-on { color: var(--text); background: var(--panel); border-color: var(--line-2); }
-.layers { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
-.layers-label { font-size: 13px; color: var(--faint); margin-right: 2px; }
-.toggle {
-  display: flex; align-items: center; gap: 7px; min-height: 34px; padding: 5px 10px; border-radius: 8px; cursor: pointer;
-  background: none; border: 1px solid var(--line); color: var(--muted);
+.layers { flex: none; border-top: 1px solid var(--line); padding: 8px; }
+.layer-row {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; min-height: 36px;
+  border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; text-align: left; font-size: 14px;
 }
-.toggle:hover { border-color: var(--line-2); color: var(--text); }
-.toggle.is-on { color: var(--text); border-color: var(--line-2); background: var(--panel); }
-.toggle-box { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line-2); display: grid; place-items: center; font-size: 11px; }
-.toggle.is-on .toggle-box { background: var(--aff); border-color: var(--aff); color: var(--bg); font-weight: 700; }
-.toggle-count { font: 12px var(--mono); color: var(--faint); }
+.layer-row:hover { background: var(--panel); color: var(--text); }
+.layer-row.is-on { color: var(--text); }
+.layer-name { flex: 1; }
+.layer-switch { position: relative; width: 28px; height: 16px; border-radius: 8px; background: var(--line-2); flex: none; transition: background 0.2s; }
+.layer-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform 0.2s, background 0.2s; }
+.layer-row.is-on .layer-switch { background: var(--aff); }
+.layer-row.is-on .layer-switch::after { transform: translateX(12px); background: var(--bg); }
 .topbar-progress { margin-left: auto; display: flex; align-items: center; gap: 10px; font: 13px var(--mono); color: var(--muted); }
 .topbar-progress strong { color: var(--text); }
 .topbar-progress .progress-bar { width: 90px; }
@@ -461,3 +468,17 @@ button.pill-head:hover { background: var(--panel-2); }
 .decision.is-far .step { width: 64px; height: 64px; font-size: 30px; border-width: 3px; }
 .tree-diamond { color: #c4b5fd; font-size: 13px; }
 .tree-item.is-decision .tree-name { font-family: var(--sans); font-size: 13px; color: #ddd6fe; }
+
+/* Número de grupo: une la lista del panel con el mapa visto de lejos */
+.group-n {
+  display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; flex: none;
+  font: 600 0.85em var(--mono); color: var(--bg); background: var(--muted);
+}
+.group-n.risk-alto { background: var(--risk-alto); }
+.group-n.risk-medio { background: var(--risk-medio); }
+.group-n.risk-bajo { background: var(--risk-bajo); }
+.group.risk-alto .group-n { background: var(--risk-alto); }
+.group.risk-medio .group-n { background: var(--risk-medio); }
+.group.risk-bajo .group-n { background: var(--risk-bajo); }
+.group-n.is-alone { font-size: 1.4em; }
+.overview .group-n { font-size: 12px; width: 22px; height: 22px; }
