@@ -99,6 +99,7 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 Reglas que valida el server (no la AI):
 - Todo hunk del diff pertenece a exactamente un bloque. Si alguno queda huérfano, va a "sin clasificar" (nunca desaparece código del review).
 - Un edge o una decisión sin evidencia, o con evidencia que no existe en el archivo, se descarta.
+- Toda flecha y todo rombo salen de una fila del bloque (`fromRow`). Si la relación está en una línea que no cambió, el bloque suma una fila "afectada" para esa línea. Sin fila de origen no se dibuja: una flecha que sale del título no dice de dónde viene.
 - Si el JSON no cumple el schema, se reintenta una vez y si vuelve a fallar se muestra el error.
 
 ## Criterios de terminado

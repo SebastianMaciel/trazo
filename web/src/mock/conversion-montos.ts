@@ -227,8 +227,8 @@ export const mockAnalysis: Analysis = {
   edges: [
     { id: "e1", from: "b-handler", to: "b-parse", fromRow: "r-h-parse", kind: "llama", label: "body.amount", evidence: "src/api/checkout.ts:13" },
     { id: "e3", from: "b-cents", to: "b-cart", fromRow: "r-c-round", toRow: "r-ca-sum", kind: "datos", label: "centavos", evidence: "src/cart.ts:4" },
-    { id: "e4", from: "b-cart", to: "b-inst", toRow: "r-i-base", kind: "datos", label: "total", evidence: "src/installments.ts:12" },
-    { id: "e5", from: "b-cart", to: "b-invoice", toRow: "r-inv-total", kind: "datos", label: "total", evidence: "src/invoice.ts:21" },
+    { id: "e4", from: "b-cart", to: "b-inst", fromRow: "r-ca-sum", toRow: "r-i-base", kind: "datos", label: "total", evidence: "src/installments.ts:12" },
+    { id: "e5", from: "b-cart", to: "b-invoice", fromRow: "r-ca-sum", toRow: "r-inv-total", kind: "datos", label: "total", evidence: "src/invoice.ts:21" },
     { id: "e6", from: "b-cents", to: "b-invoice", fromRow: "r-c-round", toRow: "r-inv-lines", kind: "datos", label: "precio por línea", evidence: "src/invoice.ts:14" },
     { id: "e7", from: "b-test", to: "b-parse", fromRow: "r-t-1", kind: "testea", label: "testea", evidence: "src/money.test.ts:6" },
     { id: "e8", from: "b-test", to: "b-cents", fromRow: "r-t-3", kind: "testea", label: "testea", evidence: "src/money.test.ts:11" },
@@ -237,6 +237,7 @@ export const mockAnalysis: Analysis = {
     {
       id: "d-valid",
       from: "b-parse",
+      fromRow: "r-p-null",
       condition: "¿Se pudo leer el monto?",
       status: "nueva",
       summary: "Antes cualquier texto seguía de largo y parseFloat lo convertía en algo, aunque fuera basura. Ahora si parseARS no lo entiende, el pedido se corta con un 400.",
