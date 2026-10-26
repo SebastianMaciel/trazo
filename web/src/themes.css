@@ -1,234 +1,331 @@
 /* Temas. Cada uno pisa las variables de :root (que es "Noche", el original) */
 
-/* Tinta: editorial, papel quemado y tinta bermellón. Títulos en serif */
-[data-theme="tinta"] {
-  --bg: #14110e;
-  --bg-2: #1a1612;
-  --panel: #211c17;
-  --panel-2: #2b241d;
-  --line: #3a3128;
-  --line-2: #54473a;
-  --text: #efe6d6;
-  --text-2: #d9cdb8;
-  --muted: #b3a48c;
-  --faint: #8f8270;
-  --accent: #ff5b35;
-  --accent-ink: #1a0802;
-  --accent-glow: color-mix(in srgb, #ff5b35 35%, transparent);
-  --add: #9fcf7a;
-  --add-bg: color-mix(in srgb, #9fcf7a 12%, transparent);
-  --del: #ff7a6b;
-  --del-bg: color-mix(in srgb, #ff7a6b 13%, transparent);
-  --mod: #e9b44c;
-  --mod-bg: color-mix(in srgb, #e9b44c 13%, transparent);
-  --aff: #c9b18a;
-  --risk-alto: #ff5b35;
-  --risk-medio: #e9b44c;
-  --risk-bajo: #9fcf7a;
-  --glass: color-mix(in srgb, #1a1612 92%, transparent);
-  --shadow: rgba(0, 0, 0, 0.55);
-  --dot: #3a3128;
-  --wire: #7d6d58;
-  --group-bg: color-mix(in srgb, #2b241d 40%, transparent);
-  --group-border: #3a3128;
-  --group-bg-far: color-mix(in srgb, #2b241d 75%, transparent);
-  --decision: #d98cff;
-  --decision-fill: #261a2b;
-  --decision-text: #f3e3fa;
-  --code-bg: #100d0b;
-  --radius-sm: 3px;
-  --radius: 4px;
-  --radius-lg: 6px;
-  --display: "Fraunces Variable", Georgia, serif;
-  --sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --shiki: vitesse-dark;
+/* Nord: el ártico de siempre, azules apagados y escarcha */
+[data-theme="nord"] {
+  --bg: #242933;
+  --bg-2: #2b303b;
+  --panel: #2e3440;
+  --panel-2: #3b4252;
+  --line: #3b4252;
+  --line-2: #4c566a;
+  --text: #eceff4;
+  --text-2: #d8dee9;
+  --muted: #b4bccb;
+  --faint: #8f9bb0;
+  --accent: #88c0d0;
+  --accent-ink: #1d2128;
+  --accent-glow: color-mix(in srgb, #88c0d0 35%, transparent);
+  --add: #a3be8c;
+  --add-bg: color-mix(in srgb, #a3be8c 14%, transparent);
+  --del: #bf616a;
+  --del-bg: color-mix(in srgb, #bf616a 16%, transparent);
+  --mod: #ebcb8b;
+  --mod-bg: color-mix(in srgb, #ebcb8b 13%, transparent);
+  --aff: #81a1c1;
+  --risk-alto: #d08770;
+  --risk-medio: #ebcb8b;
+  --risk-bajo: #a3be8c;
+  --glass: color-mix(in srgb, #2b303b 94%, transparent);
+  --shadow: rgba(10, 13, 18, 0.5);
+  --code-bg: #272c36;
+  --dot: #3b4252;
+  --wire: #6b7891;
+  --group-bg: color-mix(in srgb, #3b4252 35%, transparent);
+  --group-border: #434c5e;
+  --group-bg-far: color-mix(in srgb, #3b4252 80%, transparent);
+  --decision: #b48ead;
+  --decision-fill: #3a3343;
+  --decision-text: #f1e6ef;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --display: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+  --shiki: nord;
 }
 
-/* Fósforo: monitor CRT. Todo monoespaciado, verde fósforo, ámbar para lo que importa, cero curvas */
-[data-theme="fosforo"] {
-  --bg: #030805;
-  --bg-2: #061009;
-  --panel: #08150c;
-  --panel-2: #0d2113;
-  --line: #133520;
-  --line-2: #1f5232;
-  --text: #b6f7c6;
-  --text-2: #8fe0a5;
-  --muted: #6cbf86;
-  --faint: #4f9a68;
-  --accent: #ffb300;
-  --accent-ink: #160e00;
-  --accent-glow: color-mix(in srgb, #ffb300 40%, transparent);
-  --add: #39ff7a;
-  --add-bg: color-mix(in srgb, #39ff7a 12%, transparent);
-  --del: #ff4f4f;
-  --del-bg: color-mix(in srgb, #ff4f4f 14%, transparent);
-  --mod: #ffb300;
-  --mod-bg: color-mix(in srgb, #ffb300 12%, transparent);
-  --aff: #5fd4c4;
-  --risk-alto: #ff4f4f;
-  --risk-medio: #ffb300;
-  --risk-bajo: #39ff7a;
-  --glass: color-mix(in srgb, #061009 94%, transparent);
+/* GitHub: el dark de github.com, tal cual */
+[data-theme="github"] {
+  --bg: #010409;
+  --bg-2: #0d1117;
+  --panel: #151b23;
+  --panel-2: #212830;
+  --line: #262c36;
+  --line-2: #3d444d;
+  --text: #f0f6fc;
+  --text-2: #d1d7e0;
+  --muted: #9198a1;
+  --faint: #7d8590;
+  --accent: #4493f8;
+  --accent-ink: #ffffff;
+  --accent-glow: color-mix(in srgb, #4493f8 35%, transparent);
+  --add: #3fb950;
+  --add-bg: color-mix(in srgb, #2ea043 15%, transparent);
+  --del: #f85149;
+  --del-bg: color-mix(in srgb, #f85149 15%, transparent);
+  --mod: #d29922;
+  --mod-bg: color-mix(in srgb, #d29922 15%, transparent);
+  --aff: #8b949e;
+  --risk-alto: #f85149;
+  --risk-medio: #d29922;
+  --risk-bajo: #3fb950;
+  --glass: color-mix(in srgb, #0d1117 95%, transparent);
+  --shadow: rgba(1, 4, 9, 0.8);
+  --code-bg: #0d1117;
+  --dot: #21262d;
+  --wire: #59636e;
+  --group-bg: color-mix(in srgb, #151b23 50%, transparent);
+  --group-border: #3d444d;
+  --group-bg-far: #151b23;
+  --decision: #ab7df8;
+  --decision-fill: #1e1530;
+  --decision-text: #ecdffe;
+  --radius-sm: 6px;
+  --radius: 6px;
+  --radius-lg: 12px;
+  --display: -apple-system, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --sans: -apple-system, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --shiki: github-dark-default;
+}
+
+/* Matrix: verde, pero de noche y tranquilo. Sin lluvia de caracteres ni fuente de hacker */
+[data-theme="matrix"] {
+  --bg: #070d0a;
+  --bg-2: #0b130f;
+  --panel: #0f1a14;
+  --panel-2: #15241c;
+  --line: #1b2e23;
+  --line-2: #2a4536;
+  --text: #d3eadb;
+  --text-2: #b5d6c0;
+  --muted: #8fb89c;
+  --faint: #6f9a7d;
+  --accent: #5ee08f;
+  --accent-ink: #04140a;
+  --accent-glow: color-mix(in srgb, #5ee08f 30%, transparent);
+  --add: #5ee08f;
+  --add-bg: color-mix(in srgb, #5ee08f 11%, transparent);
+  --del: #ef8a7a;
+  --del-bg: color-mix(in srgb, #ef8a7a 13%, transparent);
+  --mod: #d7c96b;
+  --mod-bg: color-mix(in srgb, #d7c96b 12%, transparent);
+  --aff: #7fb7a0;
+  --risk-alto: #ef8a7a;
+  --risk-medio: #d7c96b;
+  --risk-bajo: #5ee08f;
+  --glass: color-mix(in srgb, #0b130f 94%, transparent);
+  --shadow: rgba(0, 0, 0, 0.6);
+  --code-bg: #08100c;
+  --dot: #15261c;
+  --wire: #3f6b51;
+  --group-bg: color-mix(in srgb, #15241c 40%, transparent);
+  --group-border: #22392c;
+  --group-bg-far: color-mix(in srgb, #15241c 85%, transparent);
+  --decision: #7fd6c2;
+  --decision-fill: #0d2420;
+  --decision-text: #dcfbf3;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --display: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+  --shiki: everforest-dark;
+}
+
+/* Ámbar: el monitor monocromo de fósforo ámbar. El código también va en ámbar */
+[data-theme="ambar"] {
+  --bg: #0e0902;
+  --bg-2: #140d03;
+  --panel: #1a1105;
+  --panel-2: #241808;
+  --line: #33230c;
+  --line-2: #4d3512;
+  --text: #ffc66b;
+  --text-2: #f0b456;
+  --muted: #c99447;
+  --faint: #a67a3a;
+  --accent: #ffb000;
+  --accent-ink: #1a0f00;
+  --accent-glow: color-mix(in srgb, #ffb000 40%, transparent);
+  --add: #ffd27a;
+  --add-bg: color-mix(in srgb, #ffb000 12%, transparent);
+  --del: #ff6a3d;
+  --del-bg: color-mix(in srgb, #ff6a3d 14%, transparent);
+  --mod: #ffb000;
+  --mod-bg: color-mix(in srgb, #ffb000 10%, transparent);
+  --aff: #d9a35a;
+  --risk-alto: #ff6a3d;
+  --risk-medio: #ffb000;
+  --risk-bajo: #ffd27a;
+  --glass: color-mix(in srgb, #140d03 95%, transparent);
   --shadow: rgba(0, 0, 0, 0.7);
-  --dot: #11301c;
-  --wire: #2f7a4a;
-  --group-bg: color-mix(in srgb, #0d2113 45%, transparent);
-  --group-border: #1f5232;
-  --group-bg-far: color-mix(in srgb, #0d2113 80%, transparent);
-  --decision: #5fd4c4;
-  --decision-fill: #06201c;
-  --decision-text: #c9fff6;
-  --code-bg: #020604;
-  --radius-sm: 0;
-  --radius: 0;
-  --radius-lg: 0;
-  --display: "VT323", ui-monospace, monospace;
+  --code-bg: #0b0701;
+  --dot: #2a1d09;
+  --wire: #7a5420;
+  --group-bg: color-mix(in srgb, #241808 40%, transparent);
+  --group-border: #3d2a0e;
+  --group-bg-far: color-mix(in srgb, #241808 85%, transparent);
+  --decision: #ffcf70;
+  --decision-fill: #2a1c06;
+  --decision-text: #ffe2a8;
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-lg: 4px;
+  --display: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --sans: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --shiki: min-dark;
 }
+[data-theme="ambar"] code { filter: sepia(1) saturate(2.6) hue-rotate(-12deg) brightness(1.05); }
 
-/* Plano: papel de plano azul prusia, líneas blancas, letra técnica angosta */
-[data-theme="plano"] {
-  --bg: #0a2342;
-  --bg-2: #0c2a4f;
-  --panel: #0f305a;
-  --panel-2: #143a6b;
-  --line: #2a5288;
-  --line-2: #4c78b3;
-  --text: #f1f6ff;
-  --text-2: #d4e3fa;
-  --muted: #a9c3e8;
-  --faint: #86a6d4;
-  --accent: #ffe14d;
-  --accent-ink: #1d1700;
-  --accent-glow: color-mix(in srgb, #ffe14d 35%, transparent);
-  --add: #7ff0c3;
-  --add-bg: color-mix(in srgb, #7ff0c3 13%, transparent);
-  --del: #ff8fa3;
-  --del-bg: color-mix(in srgb, #ff8fa3 15%, transparent);
-  --mod: #ffe14d;
-  --mod-bg: color-mix(in srgb, #ffe14d 13%, transparent);
-  --aff: #b8d4ff;
-  --risk-alto: #ff8fa3;
-  --risk-medio: #ffe14d;
-  --risk-bajo: #7ff0c3;
-  --glass: color-mix(in srgb, #0c2a4f 92%, transparent);
-  --shadow: rgba(2, 10, 25, 0.6);
-  --dot: #23497c;
-  --wire: #7fa3d6;
+/* MU-TH-UR 6000: la computadora de la Nostromo. Mayúsculas, verde frío, pantalla de servicio */
+[data-theme="muthur"] {
+  --bg: #020605;
+  --bg-2: #040b09;
+  --panel: #06110e;
+  --panel-2: #0a1c17;
+  --line: #10302a;
+  --line-2: #1a4a40;
+  --text: #bfffe9;
+  --text-2: #9cebd2;
+  --muted: #6fc4a9;
+  --faint: #529c86;
+  --accent: #e8fff7;
+  --accent-ink: #02100b;
+  --accent-glow: color-mix(in srgb, #9dffe0 40%, transparent);
+  --add: #7dffcb;
+  --add-bg: color-mix(in srgb, #7dffcb 10%, transparent);
+  --del: #ff7a6e;
+  --del-bg: color-mix(in srgb, #ff7a6e 13%, transparent);
+  --mod: #f4f0a0;
+  --mod-bg: color-mix(in srgb, #f4f0a0 9%, transparent);
+  --aff: #6fc4a9;
+  --risk-alto: #ff7a6e;
+  --risk-medio: #f4f0a0;
+  --risk-bajo: #7dffcb;
+  --glass: color-mix(in srgb, #040b09 96%, transparent);
+  --shadow: rgba(0, 0, 0, 0.8);
+  --code-bg: #010403;
+  --dot: #0c241e;
+  --wire: #2e7a66;
   --group-bg: transparent;
-  --group-border: #6d93c9;
-  --group-bg-far: color-mix(in srgb, #143a6b 80%, transparent);
-  --decision: #ffffff;
-  --decision-fill: #0f305a;
-  --decision-text: #ffffff;
-  --code-bg: #08203d;
-  --radius-sm: 2px;
-  --radius: 2px;
-  --radius-lg: 3px;
-  --display: "Archivo Variable", ui-sans-serif, sans-serif;
-  --sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
-  --mono: "Space Mono", ui-monospace, Menlo, monospace;
-  --shiki: poimandres;
-}
-[data-theme="plano"] .detail-title,
-[data-theme="plano"] .group-title,
-[data-theme="plano"] .pr-title { font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.02em; }
-
-/* Ácido: grafito brutalista, un solo color fuerte, esquinas a 90 grados */
-[data-theme="acido"] {
-  --bg: #0e0e0e;
-  --bg-2: #141414;
-  --panel: #191919;
-  --panel-2: #222222;
-  --line: #2c2c2c;
-  --line-2: #444444;
-  --text: #f4f4f0;
-  --text-2: #d6d6d0;
-  --muted: #a8a8a0;
-  --faint: #85857e;
-  --accent: #d4ff00;
-  --accent-ink: #0e0e0e;
-  --accent-glow: color-mix(in srgb, #d4ff00 30%, transparent);
-  --add: #d4ff00;
-  --add-bg: color-mix(in srgb, #d4ff00 10%, transparent);
-  --del: #ff3d71;
-  --del-bg: color-mix(in srgb, #ff3d71 13%, transparent);
-  --mod: #f4f4f0;
-  --mod-bg: color-mix(in srgb, #f4f4f0 8%, transparent);
-  --aff: #9a9a92;
-  --risk-alto: #ff3d71;
-  --risk-medio: #f4f4f0;
-  --risk-bajo: #d4ff00;
-  --glass: #141414;
-  --shadow: rgba(0, 0, 0, 0.6);
-  --dot: #262626;
-  --wire: #5a5a55;
-  --group-bg: color-mix(in srgb, #222222 35%, transparent);
-  --group-border: #333333;
-  --group-bg-far: #1a1a1a;
-  --decision: #f4f4f0;
-  --decision-fill: #0e0e0e;
-  --decision-text: #f4f4f0;
-  --code-bg: #0a0a0a;
+  --group-border: #1a4a40;
+  --group-bg-far: #06110e;
+  --decision: #bfffe9;
+  --decision-fill: #04140f;
+  --decision-text: #e8fff7;
   --radius-sm: 0;
   --radius: 0;
   --radius-lg: 0;
-  --display: "Unbounded Variable", ui-sans-serif, sans-serif;
-  --sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
-  --mono: "Space Mono", ui-monospace, Menlo, monospace;
-  --shiki: ayu-dark;
+  --display: "Share Tech Mono", ui-monospace, monospace;
+  --sans: "Share Tech Mono", ui-monospace, monospace;
+  --mono: "Share Tech Mono", ui-monospace, monospace;
+  --shiki: min-dark;
+}
+[data-theme="muthur"] code { filter: sepia(1) saturate(2.2) hue-rotate(115deg) brightness(1.1); }
+[data-theme="muthur"] .detail-title,
+[data-theme="muthur"] .group-title,
+[data-theme="muthur"] .pr-title,
+[data-theme="muthur"] .eyebrow,
+[data-theme="muthur"] .verdict-q,
+[data-theme="muthur"] .btn { text-transform: uppercase; letter-spacing: 0.08em; }
+[data-theme="muthur"] body { text-shadow: 0 0 6px color-mix(in srgb, #7dffcb 25%, transparent); }
+
+/* Paper: un e-reader. Papel tibio, tinta casi negra, serif para leer de corrido */
+[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #e9e4d6;
+  --bg-2: #f1ede2;
+  --panel: #f6f2e8;
+  --panel-2: #e7e1d1;
+  --line: #d6cfbd;
+  --line-2: #b9b09a;
+  --text: #22201b;
+  --text-2: #36332c;
+  --muted: #5f5a4e;
+  --faint: #7a7464;
+  --accent: #8a4b12;
+  --accent-ink: #fbf6ea;
+  --accent-glow: color-mix(in srgb, #8a4b12 25%, transparent);
+  --add: #3f6b2a;
+  --add-bg: color-mix(in srgb, #3f6b2a 12%, transparent);
+  --del: #9c2f24;
+  --del-bg: color-mix(in srgb, #9c2f24 11%, transparent);
+  --mod: #8a6512;
+  --mod-bg: color-mix(in srgb, #8a6512 12%, transparent);
+  --aff: #5c6a78;
+  --risk-alto: #9c2f24;
+  --risk-medio: #a77a16;
+  --risk-bajo: #3f6b2a;
+  --glass: color-mix(in srgb, #f1ede2 96%, transparent);
+  --shadow: rgba(60, 50, 30, 0.18);
+  --code-bg: #f6f2e8;
+  --dot: #cfc7b2;
+  --wire: #9a9079;
+  --group-bg: color-mix(in srgb, #f6f2e8 45%, transparent);
+  --group-border: #cbc3ad;
+  --group-bg-far: #efe9db;
+  --decision: #5d3f7a;
+  --decision-fill: #ece5ef;
+  --decision-text: #2c1c3c;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --display: "Literata Variable", Georgia, serif;
+  --sans: "Literata Variable", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --shiki: min-light;
+  --hi: black;
+  --lo: white;
 }
 
-/* Bordó: terciopelo oscuro, oro rosado, títulos en serif fina */
-[data-theme="bordo"] {
-  --bg: #170b10;
-  --bg-2: #1e0f15;
-  --panel: #26131b;
-  --panel-2: #321a24;
-  --line: #45252f;
-  --line-2: #643844;
-  --text: #f6e9ec;
-  --text-2: #e5cfd5;
-  --muted: #c4a3ad;
-  --faint: #a2828c;
-  --accent: #f0b38a;
-  --accent-ink: #2a1206;
-  --accent-glow: color-mix(in srgb, #f0b38a 35%, transparent);
-  --add: #a3d9a5;
-  --add-bg: color-mix(in srgb, #a3d9a5 12%, transparent);
-  --del: #ff8a9a;
-  --del-bg: color-mix(in srgb, #ff8a9a 14%, transparent);
-  --mod: #f0b38a;
-  --mod-bg: color-mix(in srgb, #f0b38a 13%, transparent);
-  --aff: #d6a6c4;
-  --risk-alto: #ff8a9a;
-  --risk-medio: #f0b38a;
-  --risk-bajo: #a3d9a5;
-  --glass: color-mix(in srgb, #1e0f15 90%, transparent);
-  --shadow: rgba(8, 0, 4, 0.6);
-  --dot: #3a1e28;
-  --wire: #8a5a68;
-  --group-bg: color-mix(in srgb, #321a24 40%, transparent);
-  --group-border: #4d2a36;
-  --group-bg-far: color-mix(in srgb, #321a24 80%, transparent);
-  --decision: #c8a2ff;
-  --decision-fill: #251838;
-  --decision-text: #efe4ff;
-  --code-bg: #12080c;
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
-  --display: "Instrument Serif", Georgia, serif;
-  --sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --mono: "Martian Mono Variable", ui-monospace, Menlo, monospace;
-  --shiki: rose-pine;
+/* Psycho: tema claro, blanco de hospital. Para los que programan con el sol de frente */
+[data-theme="psycho"] {
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef1f5;
+  --line: #e1e4e8;
+  --line-2: #c9ced6;
+  --text: #16181d;
+  --text-2: #2f343c;
+  --muted: #59606b;
+  --faint: #6e7581;
+  --accent: #0a66d6;
+  --accent-ink: #ffffff;
+  --accent-glow: color-mix(in srgb, #0a66d6 25%, transparent);
+  --add: #1a7f37;
+  --add-bg: color-mix(in srgb, #1a7f37 10%, transparent);
+  --del: #cf222e;
+  --del-bg: color-mix(in srgb, #cf222e 9%, transparent);
+  --mod: #9a6700;
+  --mod-bg: color-mix(in srgb, #bf8700 12%, transparent);
+  --aff: #57606a;
+  --risk-alto: #cf222e;
+  --risk-medio: #bf8700;
+  --risk-bajo: #1a7f37;
+  --glass: color-mix(in srgb, #ffffff 95%, transparent);
+  --shadow: rgba(20, 30, 50, 0.14);
+  --code-bg: #ffffff;
+  --dot: #d5d9e0;
+  --wire: #9aa3b0;
+  --group-bg: color-mix(in srgb, #ffffff 55%, transparent);
+  --group-border: #d5dae1;
+  --group-bg-far: #ffffff;
+  --decision: #8250df;
+  --decision-fill: #f5f0ff;
+  --decision-text: #2d1660;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --display: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+  --shiki: light-plus;
+  --hi: black;
+  --lo: white;
 }
-[data-theme="bordo"] .detail-title:not(.mono),
-[data-theme="bordo"] .group-title,
-[data-theme="bordo"] .pr-title { font-weight: 400; font-style: italic; letter-spacing: 0; }
-[data-theme="bordo"] .detail-title:not(.mono) { font-size: 34px; }
-[data-theme="acido"] .pr-title { font-size: 13px; }

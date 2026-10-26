@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from "react";
 /** Los temas para probar. Los colores de acá son solo la muestra del menú; los de verdad están en themes.css */
 export const THEMES = [
   { id: "noche", name: "Noche", note: "el de siempre", swatch: ["#080d1c", "#111a33", "#f5b942", "#4ade80", "#fb7185"], display: "Space Grotesk Variable" },
-  { id: "tinta", name: "Tinta", note: "editorial, serif y bermellón", swatch: ["#14110e", "#211c17", "#ff5b35", "#9fcf7a", "#efe6d6"], display: "Fraunces Variable" },
-  { id: "fosforo", name: "Fósforo", note: "monitor CRT, todo mono", swatch: ["#030805", "#08150c", "#b6f7c6", "#39ff7a", "#ffb300"], display: "VT323" },
-  { id: "plano", name: "Plano", note: "papel de plano azul prusia", swatch: ["#0a2342", "#0f305a", "#f1f6ff", "#7ff0c3", "#ffe14d"], display: "Archivo Variable" },
-  { id: "acido", name: "Ácido", note: "grafito brutalista, cero curvas", swatch: ["#0e0e0e", "#191919", "#f4f4f0", "#ff3d71", "#d4ff00"], display: "Unbounded Variable" },
-  { id: "bordo", name: "Bordó", note: "terciopelo y oro rosado", swatch: ["#170b10", "#26131b", "#c8a2ff", "#a3d9a5", "#f0b38a"], display: "Instrument Serif" },
+  { id: "nord", name: "Nord", note: "azules árticos apagados", swatch: ["#242933", "#3b4252", "#88c0d0", "#a3be8c", "#b48ead"], display: "Inter Variable" },
+  { id: "github", name: "GitHub", note: "el dark de github.com", swatch: ["#010409", "#151b23", "#4493f8", "#3fb950", "#f85149"], display: "Inter Variable" },
+  { id: "matrix", name: "Matrix", note: "verde, de noche y tranquilo", swatch: ["#070d0a", "#15241c", "#5ee08f", "#7fd6c2", "#d7c96b"], display: "Inter Variable" },
+  { id: "ambar", name: "Ámbar", note: "monitor de fósforo ámbar", swatch: ["#0e0902", "#241808", "#ffb000", "#ffd27a", "#ff6a3d"], display: "IBM Plex Mono" },
+  { id: "muthur", name: "MU-TH-UR 6000", note: "la computadora de la Nostromo", swatch: ["#020605", "#0a1c17", "#bfffe9", "#7dffcb", "#ff7a6e"], display: "Share Tech Mono" },
+  { id: "paper", name: "Paper", note: "claro, papel de e-reader", swatch: ["#e9e4d6", "#f6f2e8", "#22201b", "#8a4b12", "#3f6b2a"], display: "Literata Variable" },
+  { id: "psycho", name: "Psycho", note: "claro, para los que programan con el sol de frente", swatch: ["#f3f4f6", "#ffffff", "#16181d", "#0a66d6", "#cf222e"], display: "Inter Variable" },
 ] as const;
 
 type ThemeId = (typeof THEMES)[number]["id"];

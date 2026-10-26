@@ -4,7 +4,7 @@ import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import { useCssVar } from "./theme";
 
 /** Temas de shiki disponibles; cada tema de la app elige uno con la variable CSS --shiki */
-export const SHIKI_THEMES = ["github-dark-default", "vitesse-dark", "poimandres", "kanagawa-wave", "houston", "rose-pine", "min-dark", "ayu-dark"] as const;
+export const SHIKI_THEMES = ["github-dark-default", "nord", "everforest-dark", "min-dark", "min-light", "light-plus"] as const;
 const FALLBACK = "github-dark-default";
 let highlighter: Promise<HighlighterCore> | null = null;
 
@@ -12,13 +12,11 @@ function getHighlighter() {
   highlighter ??= createHighlighterCore({
     themes: [
       import("shiki/themes/github-dark-default.mjs"),
-      import("shiki/themes/vitesse-dark.mjs"),
-      import("shiki/themes/poimandres.mjs"),
-      import("shiki/themes/kanagawa-wave.mjs"),
-      import("shiki/themes/houston.mjs"),
-      import("shiki/themes/rose-pine.mjs"),
+      import("shiki/themes/nord.mjs"),
+      import("shiki/themes/everforest-dark.mjs"),
       import("shiki/themes/min-dark.mjs"),
-      import("shiki/themes/ayu-dark.mjs"),
+      import("shiki/themes/min-light.mjs"),
+      import("shiki/themes/light-plus.mjs"),
     ],
     langs: [import("shiki/langs/typescript.mjs"), import("shiki/langs/tsx.mjs")],
     engine: createJavaScriptRegexEngine(),
