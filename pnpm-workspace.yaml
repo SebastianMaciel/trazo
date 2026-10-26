@@ -1,0 +1,7 @@
+# esbuild (lo usan Vite y tsx) es la única dependencia con script de instalación.
+# Aprobado acá para que pnpm install no frene pidiendo approve-builds.
+# onlyBuiltDependencies es la forma de pnpm 10; allowBuilds, la de pnpm 11.
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  esbuild: true
