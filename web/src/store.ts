@@ -140,7 +140,8 @@ export const useReview = create<ReviewState>((set, get) => ({
     const layer = block ? layerOf(analysis, block) : null;
     if (layer && !show[layer]) get().toggleShow(layer);
     stepToUrl(id);
-    set((s) => ({ selected: id, summary: false, overview: id ? false : s.overview, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
+    // El código abierto es del paso en el que estabas: al pasar a otro se cierra
+    set((s) => ({ selected: id, summary: false, overview: id ? false : s.overview, codeOpen: id && id === s.selected ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
   setVerdict: (id, v) => {
     const verdicts = { ...get().verdicts };
