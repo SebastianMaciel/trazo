@@ -262,6 +262,8 @@
   --shiki: min-light;
   --hi: black;
   --lo: white;
+  --dim: 0.8;
+  --dim-edge: 0.5;
 }
 
 /* Psycho: tema claro, blanco de hospital. Para los que programan con el sol de frente */
@@ -307,4 +309,6 @@
   --shiki: light-plus;
   --hi: black;
   --lo: white;
+  --dim: 0.8;
+  --dim-edge: 0.5;
 }

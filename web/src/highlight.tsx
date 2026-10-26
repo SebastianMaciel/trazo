@@ -47,10 +47,16 @@ export function useTokens(file: string, lines: string[]): ThemedToken[][] | null
   return tokens;
 }
 
+/** Si una línea larga sigue abajo, la continuación arranca bajo su indentación y no pegada al margen */
+const hang = (text: string) => {
+  const lead = (text.match(/^[ \t]*/)?.[0].length ?? 0) + 2;
+  return { paddingLeft: `${lead}ch`, textIndent: `-${lead}ch` };
+};
+
 export function Code({ tokens, text }: { tokens: ThemedToken[] | undefined; text: string }) {
-  if (!tokens) return <code>{text}</code>;
+  if (!tokens) return <code style={hang(text)}>{text}</code>;
   return (
-    <code>
+    <code style={hang(text)}>
       {tokens.map((t, i) => (
         <span key={i} style={{ color: t.color }}>
           {t.content}

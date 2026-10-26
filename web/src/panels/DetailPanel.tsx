@@ -1,4 +1,5 @@
 import type { Block, Decision, Example, HunkView } from "../../../src/shared/analysis";
+import type { DiffLine } from "../../../src/shared/diff";
 import { Code, useTokens } from "../highlight";
 import { useReview, useVisible } from "../store";
 
@@ -98,9 +99,7 @@ function BlockDetail({ block }: { block: Block }) {
 
       {block.example && <ExampleFlow ex={block.example} />}
 
-      {block.hunks.map((h, i) => (
-        <Snippet key={i} hunk={h} />
-      ))}
+      {focusHunk(block.hunks) && <Snippet hunk={focusHunk(block.hunks)!} total={block.hunks.reduce((n, h) => n + h.lines.filter((l) => l.kind !== "ctx").length, 0)} />}
 
       <Closing id={block.id} question="¿Te cierra este cambio?" />
     </div>
@@ -112,21 +111,21 @@ function ExampleFlow({ ex }: { ex: Example }) {
     <div className="example">
       <div className="example-head">
         <span>Qué pasa con un dato real</span>
-        <span className={`source ${ex.executed ? "is-run" : ""}`}>{ex.executed ? "ejecutado" : "estimado por la AI"}</span>
+        <span className={`source ${ex.executed ? "is-run" : ""}`}>{ex.executed ? "lo corrimos de verdad" : "lo estimó la AI, verificalo"}</span>
       </div>
       <div className="example-flow">
-        <div className="value value-in">{ex.input}</div>
+        <div className="value value-in">{nb(ex.input)}</div>
         <div className="wire">
           <span className="wire-dot" />
         </div>
         <div className="outs">
           <div className="value value-before">
             <span className="value-tag">antes</span>
-            {ex.before}
+            {nb(ex.before)}
           </div>
           <div className="value value-after">
             <span className="value-tag">ahora</span>
-            {ex.after}
+            {nb(ex.after)}
           </div>
         </div>
       </div>
@@ -134,21 +133,48 @@ function ExampleFlow({ ex }: { ex: Example }) {
   );
 }
 
-/** Solo las líneas que cambiaron. Un click abre el diff completo en el panel de al lado */
-function Snippet({ hunk }: { hunk: HunkView }) {
+/** Los montos no se parten entre "$" y el número */
+const nb = (t: string) => t.replace(/\$ (?=[\d-])/g, "$\u00a0");
+
+/** Imports, comentarios y líneas vacías: no explican el cambio */
+const NOISE = /^\s*(import\b|export \* from|\/\/|\/\*|\*)|^\s*$/;
+const WARN = /\bojo:/i;
+const meaningful = (l: DiffLine) => l.kind !== "ctx" && !NOISE.test(l.text);
+
+/** Qué mostrar del hunk: la nota con "Ojo" si hay, si no la primera que toca código de verdad */
+function focusOf(h: HunkView) {
+  const notes = h.notes ?? [];
+  const note = notes.find((n) => WARN.test(n.text)) ?? notes.find((n) => h.lines.slice(n.from, n.to + 1).some(meaningful));
+  const span = note ? h.lines.slice(note.from, note.to + 1) : h.lines;
+  const lines = span.filter(meaningful);
+  return { lines: lines.length ? lines : span.filter((l) => l.kind !== "ctx"), note: note?.text, warn: !!note && WARN.test(note.text) };
+}
+
+/** De todos los hunks del bloque, el que tiene el aviso; si no, el primero con código que importe */
+function focusHunk(hunks: HunkView[]) {
+  return hunks.find((h) => h.notes?.some((n) => WARN.test(n.text))) ?? hunks.find((h) => h.lines.some(meaningful)) ?? hunks[0];
+}
+
+/** Las líneas que importan con su explicación. Un click abre el código completo en el panel de al lado */
+function Snippet({ hunk, total }: { hunk: HunkView; total: number }) {
   const { codeOpen, setCodeOpen } = useReview();
-  const changed = hunk.lines.filter((l) => l.kind !== "ctx");
-  const shown = changed.slice(0, 5);
-  const tokens = useTokens(hunk.file, shown.map((l) => l.text));
+  const focus = focusOf(hunk);
+  const shown = focus.lines.slice(0, 6);
+  // Se saca la sangría que comparten todas, para que no sobre margen a la izquierda
+  const cut = Math.min(...shown.map((l) => l.text.match(/^[ \t]*/)![0].length));
+  const texts = shown.map((l) => l.text.slice(cut));
+  const tokens = useTokens(hunk.file, texts);
+  const rest = total - shown.length;
   return (
-    <button className={`snippet ${codeOpen ? "is-open" : ""}`} onClick={() => setCodeOpen(!codeOpen)}>
+    <button className={`snippet ${codeOpen ? "is-open" : ""} ${focus.warn ? "is-warn" : ""}`} onClick={() => setCodeOpen(!codeOpen)}>
       {shown.map((l, i) => (
         <div key={i} className={`snip-line ${l.kind}`}>
-          <Code tokens={tokens?.[i]} text={l.text.trim()} />
+          <Code tokens={tokens?.[i]} text={texts[i]} />
         </div>
       ))}
+      {focus.note && <p className="snip-note">{focus.note}</p>}
       <div className="snip-foot">
-        {changed.length > shown.length ? `+${changed.length - shown.length} ${changed.length - shown.length === 1 ? "línea" : "líneas"} · ` : ""}
+        {rest > 0 ? `+${rest} ${rest === 1 ? "línea" : "líneas"} · ` : ""}
         {codeOpen ? "Cerrar código" : "Ver código completo →"}
       </div>
     </button>
@@ -185,13 +211,13 @@ function DecisionDetail({ decision: d }: { decision: Decision }) {
         <div className="cases">
           <div className="example-head">
             <span>Qué camino toma cada dato</span>
-            <span className="source">estimado por la AI</span>
+            <span className="source">lo estimó la AI, verificalo</span>
           </div>
           {d.cases.map((c) => {
             const o = d.outcomes.find((x) => x.id === c.outcome);
             return (
               <div key={c.input} className={`case ${c.warning ? "has-warning" : ""}`}>
-                <code className="case-input">{c.input}</code>
+                <code className="case-input">{nb(c.input)}</code>
                 <span className={`case-answer ${o?.end ? `tone-${o.end.tone}` : ""}`}>{o?.label}</span>
                 {(c.before || c.warning) && (
                   <span className="case-note">
@@ -205,7 +231,7 @@ function DecisionDetail({ decision: d }: { decision: Decision }) {
         </div>
       )}
 
-      {d.hunk && <Snippet hunk={d.hunk} />}
+      {d.hunk && <Snippet hunk={d.hunk} total={d.hunk.lines.filter((l) => l.kind !== "ctx").length} />}
 
       <Closing id={d.id} question="¿Te cierra esta condición?" />
     </div>

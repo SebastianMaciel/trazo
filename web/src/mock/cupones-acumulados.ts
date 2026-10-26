@@ -162,7 +162,7 @@ export const cuponesAnalysis: Analysis = {
 +  };
 +}`),
       ],
-      example: { input: `{ code: "verano10", subtotal: 12100000 }`, before: "no existía", after: "ahorrás $ 12.100,00, total $ 108.900,00", executed: true },
+      example: { input: `cupón "verano10" sobre $ 121.000`, before: "no existía", after: "ahorrás $ 12.100,00, total $ 108.900,00", executed: true },
     },
     {
       id: "b-repo",

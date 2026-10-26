@@ -33,6 +33,20 @@ interface ReviewState {
 }
 
 const initial = currentCase();
+
+/** El paso en el que estás vive en la URL: recargar o compartir el link te deja en el mismo lugar */
+function stepFromUrl(): string | null {
+  const id = new URLSearchParams(location.search).get("paso");
+  return id && (initial.blocks.some((b) => b.id === id) || initial.decisions.some((d) => d.id === id)) ? id : null;
+}
+
+function stepToUrl(id: string | null) {
+  const params = new URLSearchParams(location.search);
+  if (id) params.set("paso", id);
+  else params.delete("paso");
+  const q = params.toString().replace(/%2F/g, "/");
+  history.replaceState(null, "", q ? `?${q}` : location.pathname);
+}
 const BASE_KEY = `trazo:${initial.base}..${initial.head}`;
 
 function load<T>(key: string, fallback: T): T {
@@ -80,7 +94,7 @@ export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = [
 
 export const useReview = create<ReviewState>((set, get) => ({
   analysis: initial,
-  selected: null,
+  selected: stepFromUrl(),
   verdicts: load<Record<string, Verdict>>(`${BASE_KEY}:verdicts`, {}),
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   codeOpen: false,
@@ -94,6 +108,7 @@ export const useReview = create<ReviewState>((set, get) => ({
     const block = id ? analysis.blocks.find((b) => b.id === id) : undefined;
     const layer = block ? layerOf(analysis, block) : null;
     if (layer && !show[layer]) get().toggleShow(layer);
+    stepToUrl(id);
     set((s) => ({ selected: id, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
   setVerdict: (id, v) => {

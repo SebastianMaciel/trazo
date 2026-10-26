@@ -49,8 +49,13 @@ function BranchPicker({ head }: { head: string }) {
   useEffect(() => {
     if (!open) return;
     const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", esc);
+    };
   }, [open]);
   return (
     <span className="branch-picker" ref={ref}>

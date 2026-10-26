@@ -42,6 +42,9 @@
   --shiki: github-dark-default;
   /* Hacia dónde se aclara o se oscurece un color derivado: en los temas claros se invierten */
   --hi: white;
+  /* Cuánto se apaga lo que queda fuera de foco */
+  --dim: 0.55;
+  --dim-edge: 0.3;
   --lo: black;
 }
 
@@ -151,7 +154,7 @@ button.pill-head:hover { background: var(--panel-2); }
   transition: opacity 0.3s;
 }
 .group.is-minor { border-style: dashed; background: color-mix(in srgb, var(--group-bg) 51%, transparent); }
-.group.is-dimmed { opacity: 0.55; }
+.group.is-dimmed { opacity: var(--dim); }
 .group { position: relative; }
 .group.is-far .group-head { white-space: nowrap; }
 .group-head { font-family: var(--display); display: flex; align-items: center; gap: 12px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
@@ -176,7 +179,7 @@ button.pill-head:hover { background: var(--panel-2); }
 }
 .block:hover { border-color: var(--muted); }
 .block.is-selected { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow), 0 16px 40px var(--shadow); }
-.block.is-dimmed { opacity: 0.55; filter: saturate(0.4); }
+.block.is-dimmed { opacity: var(--dim); filter: saturate(0.4); }
 .block.is-ok { border-color: color-mix(in srgb, var(--add) 60%, transparent); }
 .block.is-doubt { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .block.is-ok.is-selected, .block.is-doubt.is-selected { border-color: var(--accent); }
@@ -224,7 +227,7 @@ button.pill-head:hover { background: var(--panel-2); }
 .react-flow__edge-path.flow { vector-effect: non-scaling-stroke; stroke: var(--wire); stroke-width: 1.6; transition: stroke 0.25s, opacity 0.3s; }
 .react-flow__edge-path.flow-testea { stroke-dasharray: 5 5; }
 .react-flow__edge-path.flow.is-active { stroke: var(--accent); stroke-width: 2.4; filter: drop-shadow(0 0 6px var(--accent-glow)); }
-.react-flow__edge-path.flow.is-dimmed { opacity: 0.3; }
+.react-flow__edge-path.flow.is-dimmed { opacity: var(--dim-edge); }
 .particle { fill: color-mix(in srgb, var(--accent) 50%, var(--hi)); filter: drop-shadow(0 0 4px var(--accent)); }
 .edge-label {
   position: absolute; pointer-events: all; padding: 2px 8px; border-radius: 999px;
@@ -257,9 +260,9 @@ button.pill-head:hover { background: var(--panel-2); }
 .warning-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--del); color: color-mix(in srgb, var(--del) 15%, var(--lo)); font-weight: 700; flex: none; }
 
 .example { margin: 0 0 22px; padding: 18px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
-.example-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 600; }
+.example-head { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 600; }
 .source { font: 11px var(--mono); padding: 2px 8px; border-radius: 999px; border: 1px dashed var(--muted); color: var(--muted); }
-.source.is-run { border-style: solid; border-color: var(--add); color: var(--add); }
+.source.is-run { border-style: solid; border-color: var(--add); color: var(--add); background: var(--add-bg); }
 .example-flow { display: grid; justify-items: start; gap: 0; }
 .value { font: 13px var(--mono); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line-2); background: var(--bg); }
 .value-in { color: var(--text); }
@@ -310,7 +313,7 @@ button.pill-head:hover { background: var(--panel-2); }
 .layer-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform 0.2s, background 0.2s; }
 .layer-row.is-on .layer-switch { background: var(--aff); }
 .layer-row.is-on .layer-switch::after { transform: translateX(12px); background: var(--bg); }
-.topbar-progress { margin-left: auto; display: flex; align-items: center; gap: 10px; font: 13px var(--mono); color: var(--muted); }
+.topbar-progress { margin-left: auto; min-width: 330px; justify-content: flex-end; display: flex; align-items: center; gap: 10px; font: 13px var(--mono); color: var(--muted); }
 .topbar-progress strong { color: var(--text); }
 .topbar-progress .progress-bar { width: 90px; }
 
@@ -336,9 +339,13 @@ button.pill-head:hover { background: var(--panel-2); }
 }
 .snippet:hover, .snippet.is-open { border-color: var(--accent); }
 .snip-line { padding: 0 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.snip-line code { display: block; }
 .snip-line.add { background: var(--add-bg); }
 .snip-line.del { background: var(--del-bg); }
 .snip-line.del code { opacity: 0.7; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--del) 50%, transparent); }
+.snip-note { margin: 10px 14px 0; font: 13px/1.5 var(--sans); color: var(--text-2); white-space: normal; }
+.snippet.is-warn .snip-note { color: var(--del); }
+.snippet.is-warn { border-color: color-mix(in srgb, var(--del) 55%, transparent); }
 .snip-foot { margin-top: 12px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); font: 12px var(--sans); }
 .snippet:hover .snip-foot, .snippet.is-open .snip-foot { color: var(--accent); }
 
@@ -411,7 +418,7 @@ button.pill-head:hover { background: var(--panel-2); }
 .decision.status-nueva .decision-shape polygon { stroke-dasharray: 6 4; }
 .decision:hover .decision-shape polygon { stroke: color-mix(in srgb, var(--decision) 60%, var(--decision-text)); }
 .decision.is-selected .decision-shape polygon { stroke: var(--accent); stroke-width: 2.5; filter: drop-shadow(0 0 10px var(--accent-glow)); }
-.decision.is-dimmed { opacity: 0.55; filter: saturate(0.4); }
+.decision.is-dimmed { opacity: var(--dim); filter: saturate(0.4); }
 .decision-text { position: relative; max-width: 128px; text-align: center; font: 600 13px/1.3 var(--sans); color: var(--decision-text); }
 .decision.is-far .decision-text { font-size: 52px; font-weight: 700; }
 .decision.is-far .decision-shape polygon { stroke-width: 3; }
