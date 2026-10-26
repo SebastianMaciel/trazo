@@ -1,8 +1,8 @@
-import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, type Edge, type Node } from "@xyflow/react";
+import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, useReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
-import { layoutAnalysis, type Layout } from "../layout";
+import { FAR_ZOOM, layoutAnalysis, type Layout } from "../layout";
 import { computeSteps } from "../steps";
 import { useCssVar } from "../theme";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
@@ -123,6 +123,7 @@ export function Canvas() {
   const showIndex = useReview((s) => s.show.index);
   const codeOpen = useReview((s) => s.codeOpen);
   const frame = useFrame();
+  const { getZoom } = useReactFlow();
   useEffect(() => {
     if (!layout) return;
     requestAnimationFrame(() => {
@@ -143,6 +144,8 @@ export function Canvas() {
         edgeTypes={edgeTypes}
         onNodeClick={(_, n) => {
           if (n.type !== "block" && n.type !== "decision") return;
+          // De lejos el bloque solo muestra su título: tocarlo te acerca a ver qué tiene adentro
+          if (getZoom() < FAR_ZOOM) return select(n.id);
           // La cámara se queda quieta salvo que lo que tocaste esté cortado o tapado por un panel
           const r = document.querySelector(`.react-flow__node[data-id="${CSS.escape(n.id)}"]`)!.getBoundingClientRect();
           const c = document.querySelector(".canvas")!.getBoundingClientRect();

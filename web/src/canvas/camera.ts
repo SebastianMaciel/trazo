@@ -46,8 +46,13 @@ export function useFrame() {
       const me = minZoom && flow.getInternalNode(minZoom.focus);
       if (minZoom && me && zoom < minZoom.zoom) {
         zoom = minZoom.zoom;
-        cx = me.internals.positionAbsolute.x + (me.measured.width ?? 0) / 2;
-        cy = me.internals.positionAbsolute.y + (me.measured.height ?? 0) / 2;
+        // Los nodos con tamaño fijo no siempre traen measured: el tamaño está en el nodo
+        const w = me.measured.width ?? me.width ?? 0;
+        const h = me.measured.height ?? me.height ?? 0;
+        const top = me.internals.positionAbsolute.y;
+        cx = me.internals.positionAbsolute.x + w / 2;
+        // Si es más alto que la pantalla, se ve desde arriba: el título y las primeras filas
+        cy = h * zoom > view.h - pad * 2 ? top - pad / zoom + view.h / 2 / zoom : top + h / 2;
         // El foco queda a un tercio del hueco y no en el medio: el flujo sigue hacia la derecha
         if (minZoom.lead) cx += (view.w * 0.2) / zoom;
       }
