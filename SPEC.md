@@ -77,13 +77,25 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 | Decisión | Elegido | Por qué / trade-off |
 |---|---|---|
 | Runtime | CLI local + web en localhost | Lee git directo, el código no pasa por ningún server propio. Para compartir hay que instalar. |
-| Motor AI | `claude -p` headless | Usa la suscripción, puede leer el repo para tener contexto. Depende de tener Claude Code instalado y logueado. Es lento (decenas de segundos) y por eso va el cache. |
+| Motor AI | Adaptadores, `claude -p` primero | Cada uno usa la AI que tiene. Ver "Adaptadores de AI". Es lento (decenas de segundos) y por eso va el cache. |
 | Front | Vite + React + TS | No hay SSR ni deploy, Next.js sobra. |
 | Canvas | React Flow (xyflow) | Pan, zoom, nodos custom y edges resueltos. |
 | Layout | ELK (elkjs) | Layout automático con grupos anidados, que es justo lo de intención → bloques. |
 | Código | Shiki | Highlight exacto, mismo motor que VS Code. |
 | Server | Node + Hono | Chico, sirve la UI y expone `/api/diff`, `/api/analysis`. |
 | Estado | Store único (Zustand) con la selección separada de la UI | Pasar a 2 ventanas es sincronizar ese store por BroadcastChannel, sin tocar componentes. |
+
+### Adaptadores de AI
+
+trazo no depende de una AI en particular. Lo que necesita es poco: mandar el diff y un prompt, y recibir el JSON del contrato. La validación (schema, evidencia, filas de origen, hunks huérfanos) la hace siempre el server, así que la AI que sea no puede colar un mapa que mienta.
+
+Interfaz: `analyze({ repo, base, head, diff, prompt, schema }) → JSON`. Se elige con `--ai` o en la config del repo.
+
+1. **`claude`** (el primero): `claude -p` headless. Usa la suscripción de cada uno y lee el repo solo para tener contexto.
+2. **`cmd`** (el segundo): `--ai "mi-comando"`. Recibe el prompt por stdin y devuelve el JSON por stdout. Cubre cualquier CLI no interactiva (Codex con `codex exec`, Gemini CLI) y modelos locales (Ollama).
+3. **`api`** (después): una API compatible con OpenAI y la key de cada uno (OpenRouter, OpenAI). Como no puede leer el repo, trazo le manda además los archivos que toca el diff.
+
+Trade-offs: la calidad depende del modelo. Uno flojo devuelve flechas sin evidencia que el server descarta, y el mapa sale más pobre pero no miente. El costo lo pone cada uno con su suscripción o su key, nada pasa por un server nuestro.
 
 ### Contrato con la AI
 
