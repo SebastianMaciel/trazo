@@ -1,4 +1,4 @@
-import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, useReactFlow, useStore, type Edge, type Node } from "@xyflow/react";
+import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, useStore, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
@@ -10,6 +10,8 @@ import { DecisionNode, type DecisionNodeData } from "./DecisionNode";
 import { EndNode, type EndNodeData } from "./EndNode";
 import { FlowEdge, type FlowEdgeData } from "./FlowEdge";
 import { GroupNode, type GroupNodeData } from "./GroupNode";
+import { Overview } from "./Overview";
+import { useFrame } from "./camera";
 
 // "cluster" y no "group": React Flow le pone estilo propio (borde cuadrado) a los nodos tipo group
 const nodeTypes = { block: BlockNode, cluster: GroupNode, decision: DecisionNode, end: EndNode };
@@ -21,7 +23,6 @@ export function Canvas() {
   // El dibujo sale del análisis base: el orden del recorrido se deriva de él, no al revés
   const analysis = useMemo(() => visibleAnalysis(raw, show), [raw, show]);
   const [layout, setLayout] = useState<Layout | null>(null);
-  const flow = useReactFlow();
   const colorDel = useCssVar("--del");
   const colorAccent = useCssVar("--accent");
   const colorWire = useCssVar("--wire");
@@ -63,7 +64,7 @@ export function Canvas() {
         selectable: false,
         draggable: false,
         zIndex: 0,
-        data: { group: g, n: analysis.groups.indexOf(g) + 1, done: ids.filter((id) => verdicts[id]).length, total: ids.length, warns: analysis.blocks.filter((b) => b.group === g.id && b.warnings?.length).length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
+        data: { group: g, n: analysis.groups.indexOf(g) + 1, done: ids.filter((id) => verdicts[id]).length, total: ids.length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
       };
     });
     const blocks: Node<BlockNodeData>[] = analysis.blocks.filter((b) => layout.nodes[b.id]).map((b) => {
@@ -121,76 +122,48 @@ export function Canvas() {
   // La cámara encuadra en el hueco libre entre los paneles flotantes, no en el centro de la pantalla
   const showIndex = useReview((s) => s.show.index);
   const codeOpen = useReview((s) => s.codeOpen);
+  const frame = useFrame();
   useEffect(() => {
     if (!layout) return;
     requestAnimationFrame(() => {
-      const ids = selected ? [...neighborsIn(graph, selected)] : graph.nodes.map((n) => n.id);
-      const rects = ids
-        .map((id) => flow.getInternalNode(id))
-        .filter((n) => !!n)
-        .map((n) => ({ ...n.internals.positionAbsolute, w: n.measured.width ?? 320, h: n.measured.height ?? 120, id: n.id }));
-      if (!rects.length) return;
-      const el = document.querySelector(".canvas")!;
-      const panel = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0;
-      const code = panel(".codepanel");
-      const left = panel(".detail") + (code ? code + 10 : 0) + 24;
-      const right = showIndex ? panel(".sidebar") + 24 : 0;
-      const view = { x: left, y: 0, w: el.clientWidth - left - right, h: el.clientHeight };
-      const pad = selected ? 80 : 120;
-
-      const box = {
-        x: Math.min(...rects.map((r) => r.x)),
-        y: Math.min(...rects.map((r) => r.y)),
-        x2: Math.max(...rects.map((r) => r.x + r.w)),
-        y2: Math.max(...rects.map((r) => r.y + r.h)),
-      };
-      let zoom = Math.min(view.w / (box.x2 - box.x + pad * 2), view.h / (box.y2 - box.y + pad * 2), selected ? 1 : 0.9);
-      let cx = (box.x + box.x2) / 2;
-      let cy = (box.y + box.y2) / 2;
+      if (!selected) return frame(graph.nodes.map((n) => n.id), { pad: 120, maxZoom: 0.9 });
       // Vecinos muy desparramados: mejor centrar solo el bloque a un zoom que se lea
-      if (selected && zoom < 0.85) {
-        const me = rects.find((r) => r.id === selected)!;
-        zoom = 0.95;
-        cx = me.x + me.w / 2;
-        cy = me.y + me.h / 2;
-      }
-      // setCenter centra en el canvas entero: corro el punto para que caiga en el centro del hueco libre
-      const dx = (el.clientWidth / 2 - (view.x + view.w / 2)) / zoom;
-      flow.setCenter(cx + dx, cy, { zoom, duration: 750 });
+      frame([...neighborsIn(graph, selected)], { pad: 80, maxZoom: 1, minZoom: { zoom: 0.95, focus: selected } });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyTick, layout, showIndex, codeOpen]);
 
   return (
-    <ReactFlow
-      className={intent ? "is-intent" : ""}
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      onNodeClick={(_, n) => {
-        // De lejos, tocar un grupo te acerca a ese grupo
-        if (n.type === "cluster" && intent) return void flow.fitView({ nodes: [{ id: n.id }], duration: 600, padding: 0.15, maxZoom: 0.9 });
-        if (n.type !== "block" && n.type !== "decision") return;
-        // La cámara se queda quieta salvo que lo que tocaste esté cortado o tapado por un panel
-        const r = document.querySelector(`.react-flow__node[data-id="${CSS.escape(n.id)}"]`)!.getBoundingClientRect();
-        const c = document.querySelector(".canvas")!.getBoundingClientRect();
-        const left = c.left + ((document.querySelector(".detail") as HTMLElement | null)?.offsetWidth ?? 0) + 24;
-        const right = c.right - (showIndex ? ((document.querySelector(".sidebar") as HTMLElement | null)?.offsetWidth ?? 0) + 24 : 0);
-        const m = 72; // pegado al borde también cuenta como cortado: no se ve a dónde va
-        const visible = r.left >= left + m && r.right <= right - m && r.top >= c.top + m && r.bottom <= c.bottom - m;
-        select(n.id, !visible);
-      }}
-      onPaneClick={() => select(null, false)}
-      nodesConnectable={false}
-      // Como en Figma: dos dedos mueven el canvas, pellizcar hace zoom
-      panOnScroll
-      panOnScrollMode={PanOnScrollMode.Free}
-      minZoom={0.08}
-      maxZoom={2}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color={colorDot} />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        className={intent ? "is-intent" : ""}
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onNodeClick={(_, n) => {
+          if (n.type !== "block" && n.type !== "decision") return;
+          // La cámara se queda quieta salvo que lo que tocaste esté cortado o tapado por un panel
+          const r = document.querySelector(`.react-flow__node[data-id="${CSS.escape(n.id)}"]`)!.getBoundingClientRect();
+          const c = document.querySelector(".canvas")!.getBoundingClientRect();
+          const left = c.left + ((document.querySelector(".detail") as HTMLElement | null)?.offsetWidth ?? 0) + 24;
+          const right = c.right - (showIndex ? ((document.querySelector(".sidebar") as HTMLElement | null)?.offsetWidth ?? 0) + 24 : 0);
+          const m = 72; // pegado al borde también cuenta como cortado: no se ve a dónde va
+          const visible = r.left >= left + m && r.right <= right - m && r.top >= c.top + m && r.bottom <= c.bottom - m;
+          select(n.id, !visible);
+        }}
+        onPaneClick={() => select(null, false)}
+        nodesConnectable={false}
+        // Como en Figma: dos dedos mueven el canvas, pellizcar hace zoom
+        panOnScroll
+        panOnScrollMode={PanOnScrollMode.Free}
+        minZoom={0.08}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.4} color={colorDot} />
+      </ReactFlow>
+      {intent && layout && <Overview analysis={analysis} graph={graph} next={next} />}
+    </>
   );
 }

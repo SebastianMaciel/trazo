@@ -161,14 +161,30 @@ button.pill-head:hover { background: var(--panel-2); }
 .group-title { color: var(--text); }
 .group-progress { font-family: var(--mono); color: var(--muted); font-weight: 400; }
 .group.is-far { background: var(--group-bg-far); }
-.group.is-intent { background: color-mix(in srgb, var(--panel-2) 60%, var(--panel)); border-color: color-mix(in srgb, var(--wire) 55%, transparent); cursor: zoom-in; }
-.group.is-intent:hover { border-color: var(--line-2); background: color-mix(in srgb, var(--panel-2) 85%, var(--line)); }
-.group-intent { font-family: var(--display); position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.3em; padding: 0 0.8em; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
-.group-meta { font: 400 0.8em var(--mono); color: var(--muted); }
-.group-warns { color: var(--del); }
-/* Lejos de todo, los bloques y las flechas se esconden detrás de su grupo */
-.is-intent .react-flow__node-block, .is-intent .react-flow__node-decision, .is-intent .react-flow__node-end { opacity: 0; pointer-events: none; }
-.is-intent .react-flow__edge { opacity: 0; }
+/* Lejos de todo, el mapa se esconde y queda el esquema de grupos */
+.is-intent .react-flow__node, .is-intent .react-flow__edge { opacity: 0; pointer-events: none; }
+.react-flow__node-cluster { transition: opacity 0.25s; }
+
+/* ---------- esquema de grupos (de lejos) ---------- */
+.ov { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; padding: 40px 24px; overflow: auto; animation: ov-in 0.25s ease; }
+@keyframes ov-in { from { opacity: 0; transform: scale(0.98); } }
+.ov-grid { position: relative; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 280px)); gap: 72px 88px; align-items: start; margin: auto; }
+.ov-arrows { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ov-arrows path { fill: none; stroke: var(--wire); stroke-width: 2; }
+.ov-arrows marker path { fill: var(--wire); stroke: none; }
+.ov-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 18px; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--radius); cursor: zoom-in; transition: border-color 0.15s, background 0.15s; }
+.ov-card:hover { border-color: var(--muted); background: var(--panel-2); }
+.ov-card.is-minor { opacity: 0.85; }
+.ov-head { display: flex; align-items: flex-start; gap: 12px; font: 600 17px/1.25 var(--display); color: var(--text); letter-spacing: -0.01em; }
+.ov-head .group-n { font-size: 14px; width: 28px; height: 28px; background: var(--text); color: var(--bg); box-shadow: none; }
+.ov-card.is-done .ov-head .group-n { background: var(--add); }
+.ov-summary { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.ov-meta { margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font: 13px var(--mono); color: var(--muted); }
+.ov-here { padding: 2px 8px; border-radius: var(--radius); background: var(--accent); color: var(--bg); font: 600 12px var(--sans); }
+.ov-warns { list-style: none; margin: 2px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.ov-warn { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--radius); font: 13px/1.35 var(--mono); color: var(--text); cursor: pointer; }
+.ov-warn .warn-dot { margin-top: 1px; }
+.ov-warn:hover { background: color-mix(in srgb, var(--del) 14%, transparent); }
 .react-flow__node-block, .react-flow__node-decision, .react-flow__node-end, .react-flow__edge { transition: opacity 0.25s; }
 
 /* ---------- canvas: bloques ---------- */
