@@ -52,7 +52,7 @@ function Overview() {
       <ol className="overview">
         {analysis.groups.map((g, i) => (
           <li key={g.id}>
-            <span className={`group-n risk-${g.risk}`}>{i + 1}</span>
+            <span className="group-n">{i + 1}</span>
             <span>{g.title}</span>
           </li>
         ))}

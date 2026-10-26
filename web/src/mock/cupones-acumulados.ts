@@ -20,28 +20,24 @@ export const cuponesAnalysis: Analysis = {
       id: "g-cupon",
       title: "Entra un solo cupón y tiene que valer",
       summary: "Antes se podían sumar cupones y nadie miraba si estaban vencidos ni cuánto se compraba. Ahora entra uno solo y se valida.",
-      risk: "alto",
     },
     {
       id: "g-iva",
       title: "El descuento va antes del IVA",
       summary: "Antes el 10% se calculaba sobre el precio con IVA y se restaba del neto: el cliente se llevaba 12,1%. Ahora sale del neto y el IVA va después.",
-      risk: "alto",
     },
     {
       id: "g-salida",
       title: "El ahorro llega a las cuotas, la factura y el mail",
       summary: "El descuento no figuraba en ningún lado. Ahora se ve en la factura, en el recibo y repartido en las cuotas.",
-      risk: "medio",
     },
     {
       id: "g-datos",
       title: "La base guarda vencimiento y mínimo",
       summary: "Columnas nuevas para el cupón y un índice que no deja guardar dos cupones en la misma orden.",
-      risk: "alto",
     },
-    { id: "g-tests", title: "Tests nuevos", summary: "Cubren el precio con cupón, la vigencia, el mínimo y la factura.", risk: "bajo" },
-    { id: "g-menor", title: "Cambios menores", summary: "Textos y constantes.", risk: "bajo", minor: true },
+    { id: "g-tests", title: "Tests nuevos", summary: "Cubren el precio con cupón, la vigencia, el mínimo y la factura." },
+    { id: "g-menor", title: "Cambios menores", summary: "Textos y constantes.", minor: true },
   ],
   blocks: [
     {
@@ -50,7 +46,6 @@ export const cuponesAnalysis: Analysis = {
       title: "handleCheckout",
       file: "src/api/checkout.ts",
       kind: "endpoint",
-      risk: "alto",
       summary: "Rechaza más de un cupón y valida el que llega antes de calcular el precio.",
       rows: [
         { id: "r-ck-uno", change: "added", label: "más de un cupón → 422" },
@@ -114,7 +109,6 @@ export const cuponesAnalysis: Analysis = {
       title: "handleValidateCoupon",
       file: "src/api/coupons.ts",
       kind: "endpoint",
-      risk: "medio",
       summary: "Endpoint nuevo: valida el cupón cuando el cliente lo carga, antes de pagar, y le dice cuánto se ahorra.",
       warnings: [
         "No sabe si el carrito ya tiene otro cupón. El límite de uno solo lo pone recién el checkout.",
@@ -176,7 +170,6 @@ export const cuponesAnalysis: Analysis = {
       title: "findCoupon",
       file: "src/db/coupons-repo.ts",
       kind: "función",
-      risk: "bajo",
       summary: "El archivo cambia de nombre (era db/coupons.ts). Ahora trae vencimiento y mínimo, y acepta el código en minúscula o con espacios.",
       rows: [
         { id: "r-r-norm", change: "added", label: "código en mayúsculas y sin espacios" },
@@ -217,7 +210,6 @@ export const cuponesAnalysis: Analysis = {
       title: "isCouponActive",
       file: "src/coupons.ts",
       kind: "función",
-      risk: "alto",
       summary: "Función nueva: el cupón vale hasta su fecha de vencimiento, mirando la fecha de Argentina.",
       warnings: [
         "Compara con < en vez de <=. El comentario dice que expiresOn es el último día que vale, pero ese día el cupón ya se rechaza.",
@@ -248,7 +240,6 @@ export const cuponesAnalysis: Analysis = {
       title: "meetsMinimum",
       file: "src/coupons.ts",
       kind: "función",
-      risk: "medio",
       summary: "Función nueva: cada cupón pide una compra mínima, medida sin IVA.",
       warnings: ["El cliente ve precios con IVA en el carrito y el mínimo se mide sin IVA. Un carrito de $ 20.000 no llega a un mínimo de $ 20.000."],
       rows: [{ id: "r-m-cmp", change: "added", label: "subtotal sin IVA ≥ mínimo" }],
@@ -268,7 +259,6 @@ export const cuponesAnalysis: Analysis = {
       title: "cartTotals",
       file: "src/cart.ts",
       kind: "función",
-      risk: "bajo",
       summary: "El carrito ya no descuenta nada, solo suma precios. El descuento es cosa del cupón.",
       rows: [
         { id: "r-cart-sub", change: "affected", label: "suma los precios con IVA" },
@@ -310,7 +300,6 @@ export const cuponesAnalysis: Analysis = {
       title: "netFromGross",
       file: "src/tax.ts",
       kind: "función",
-      risk: "medio",
       affected: true,
       summary: "No cambió, pero ahora lo usan el cupón, el mínimo y la factura. La factura tenía su propia copia que truncaba; esta redondea.",
       warnings: ["Por el mismo total, una factura nueva puede tener un centavo más de neto que una vieja."],
@@ -323,7 +312,6 @@ export const cuponesAnalysis: Analysis = {
       title: "priceWithCoupon",
       file: "src/coupons.ts",
       kind: "función",
-      risk: "alto",
       summary: "El descuento sale del subtotal sin IVA y el IVA se calcula al final, sobre lo que queda. Un cupón o ninguno.",
       rows: [
         { id: "r-p-base", change: "modified", label: "descuento sobre el neto", before: "descuento sobre el precio con IVA" },
@@ -378,7 +366,6 @@ export const cuponesAnalysis: Analysis = {
       title: "quoteInstallments",
       file: "src/installments.ts",
       kind: "función",
-      risk: "medio",
       summary: "Reparte el ahorro del cupón entre las cuotas. Lo que sobra de dividir va a la última, no se pierde ningún centavo.",
       rows: [
         { id: "r-i-param", change: "added", label: "recibe el ahorro" },
@@ -429,7 +416,6 @@ export const cuponesAnalysis: Analysis = {
       title: "buildInvoice",
       file: "src/invoice.ts",
       kind: "función",
-      risk: "medio",
       summary: "La factura suma una línea con el cupón y lo que se ahorró. Usa el neto de tax.ts y borra su propia copia.",
       warnings: ["Las facturas ya emitidas con cupón siguen sin esa línea: sus renglones no suman el total."],
       rows: [
@@ -487,7 +473,6 @@ export const cuponesAnalysis: Analysis = {
       title: "renderInvoiceText",
       file: "src/invoice.ts",
       kind: "función",
-      risk: "bajo",
       affected: true,
       summary: "No cambió ninguna línea. Ahora imprime un renglón más, el del cupón, con monto negativo.",
       rows: [{ id: "r-rd-rows", change: "affected", label: "un renglón por línea de la factura" }],
@@ -499,7 +484,6 @@ export const cuponesAnalysis: Analysis = {
       title: "renderReceipt",
       file: "src/emails/receipt.ts",
       kind: "función",
-      risk: "bajo",
       summary: "El mail de recibo muestra el cupón y cuánto se ahorra en cada cuota.",
       warnings: ["Dice el ahorro de una cuota cualquiera. La última ahorra un centavo más y no se aclara."],
       rows: [
@@ -538,7 +522,6 @@ export const cuponesAnalysis: Analysis = {
       title: "002_coupons_vigencia.sql",
       file: "db/migrations/002_coupons_vigencia.sql",
       kind: "config",
-      risk: "alto",
       summary: "Agrega vencimiento y compra mínima a los cupones, y en la base también queda un solo cupón por orden.",
       warnings: [
         "Si ya hay órdenes con dos cupones (el bug lo permitía), el índice único falla y la migración no corre.",
@@ -571,7 +554,6 @@ export const cuponesAnalysis: Analysis = {
       title: "Coupon y Pricing",
       file: "src/types.ts",
       kind: "tipo",
-      risk: "bajo",
       summary: "El cupón suma vencimiento y mínimo. El precio guarda un solo código y el ahorro con IVA.",
       rows: [
         { id: "r-t-min", change: "added", label: "Coupon.minSubtotal" },
@@ -619,7 +601,6 @@ export const cuponesAnalysis: Analysis = {
       title: "coupons.test.ts",
       file: "src/coupons.test.ts",
       kind: "test",
-      risk: "bajo",
       summary: "Cinco casos para el precio con cupón, el vencimiento y el mínimo.",
       warnings: ["Ningún caso prueba el día exacto del vencimiento. Por eso no salta el < de isCouponActive."],
       rows: [
@@ -677,7 +658,6 @@ export const cuponesAnalysis: Analysis = {
       title: "invoice.test.ts",
       file: "src/invoice.test.ts",
       kind: "test",
-      risk: "bajo",
       summary: "Tres casos: la línea del cupón, que los renglones sumen el total y el ahorro repartido en cuotas.",
       rows: [
         { id: "r-ti-line", change: "added", label: "aparece \"Cupón VERANO10\"" },
@@ -732,7 +712,6 @@ export const cuponesAnalysis: Analysis = {
       title: "copy.ts",
       file: "src/copy.ts",
       kind: "copy",
-      risk: "bajo",
       summary: "Cuatro mensajes de error nuevos y los textos del cupón en la factura y el mail.",
       rows: [
         { id: "r-co-err", change: "added", label: "4 errores de cupón" },
@@ -780,7 +759,6 @@ export const cuponesAnalysis: Analysis = {
       title: "config.ts",
       file: "src/config.ts",
       kind: "config",
-      risk: "bajo",
       summary: "Dos constantes: cuántos cupones entran por compra y la zona horaria para el vencimiento.",
       rows: [
         { id: "r-cf-max", change: "added", label: "MAX_COUPONS_PER_ORDER = 1" },

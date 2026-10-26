@@ -22,9 +22,6 @@
   --mod: #ebcb8b;
   --mod-bg: color-mix(in srgb, #ebcb8b 13%, transparent);
   --aff: #81a1c1;
-  --risk-alto: #d08770;
-  --risk-medio: #ebcb8b;
-  --risk-bajo: #a3be8c;
   --glass: color-mix(in srgb, #2b303b 94%, transparent);
   --shadow: rgba(10, 13, 18, 0.5);
   --code-bg: #272c36;
@@ -67,9 +64,6 @@
   --mod: #d29922;
   --mod-bg: color-mix(in srgb, #d29922 15%, transparent);
   --aff: #8b949e;
-  --risk-alto: #f85149;
-  --risk-medio: #d29922;
-  --risk-bajo: #3fb950;
   --glass: color-mix(in srgb, #0d1117 95%, transparent);
   --shadow: rgba(1, 4, 9, 0.8);
   --code-bg: #0d1117;
@@ -112,9 +106,6 @@
   --mod: #d7c96b;
   --mod-bg: color-mix(in srgb, #d7c96b 12%, transparent);
   --aff: #7fb7a0;
-  --risk-alto: #ef8a7a;
-  --risk-medio: #d7c96b;
-  --risk-bajo: #5ee08f;
   --glass: color-mix(in srgb, #0b130f 94%, transparent);
   --shadow: rgba(0, 0, 0, 0.6);
   --code-bg: #08100c;
@@ -157,9 +148,6 @@
   --mod: #ffb000;
   --mod-bg: color-mix(in srgb, #ffb000 10%, transparent);
   --aff: #d9a35a;
-  --risk-alto: #ff6a3d;
-  --risk-medio: #ffb000;
-  --risk-bajo: #ffd27a;
   --glass: color-mix(in srgb, #140d03 95%, transparent);
   --shadow: rgba(0, 0, 0, 0.7);
   --code-bg: #0b0701;
@@ -203,9 +191,6 @@
   --mod: #f4f0a0;
   --mod-bg: color-mix(in srgb, #f4f0a0 9%, transparent);
   --aff: #6fc4a9;
-  --risk-alto: #ff7a6e;
-  --risk-medio: #f4f0a0;
-  --risk-bajo: #7dffcb;
   --glass: color-mix(in srgb, #040b09 96%, transparent);
   --shadow: rgba(0, 0, 0, 0.8);
   --code-bg: #010403;
@@ -257,9 +242,6 @@
   --mod: #8a6512;
   --mod-bg: color-mix(in srgb, #8a6512 12%, transparent);
   --aff: #5c6a78;
-  --risk-alto: #9c2f24;
-  --risk-medio: #a77a16;
-  --risk-bajo: #3f6b2a;
   --glass: color-mix(in srgb, #f1ede2 96%, transparent);
   --shadow: rgba(60, 50, 30, 0.18);
   --code-bg: #f6f2e8;
@@ -305,9 +287,6 @@
   --mod: #9a6700;
   --mod-bg: color-mix(in srgb, #bf8700 12%, transparent);
   --aff: #57606a;
-  --risk-alto: #cf222e;
-  --risk-medio: #bf8700;
-  --risk-bajo: #1a7f37;
   --glass: color-mix(in srgb, #ffffff 95%, transparent);
   --shadow: rgba(20, 30, 50, 0.14);
   --code-bg: #ffffff;

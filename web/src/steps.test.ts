@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Analysis, Block, Edge } from "../../src/shared/analysis";
 import { computeSteps } from "./steps";
 
-const block = (id: string): Block => ({ id, group: "g", title: id, file: "", kind: "función", risk: "bajo", summary: "", rows: [], hunks: [] });
+const block = (id: string): Block => ({ id, group: "g", title: id, file: "", kind: "función", summary: "", rows: [], hunks: [] });
 const context: Analysis["context"] = { before: "", problem: "", goal: "", verdict: { status: "resuelve", text: "" } };
 const edge = (from: string, to: string, kind: Edge["kind"] = "datos"): Edge => ({ id: `${from}-${to}`, from, to, kind, label: "", evidence: "" });
 
@@ -13,7 +13,7 @@ function setup(edges: Edge[], tour: string[]) {
     base: "",
     head: "",
     repo: "",
-    groups: [{ id: "g", title: "", summary: "", risk: "bajo" }],
+    groups: [{ id: "g", title: "", summary: "", }],
     blocks: tour.map(block),
     edges,
     decisions: [],
@@ -45,7 +45,7 @@ describe("computeSteps", () => {
   it("un rombo es un paso entre el bloque del que sale y el que sigue", () => {
     const a = {
       title: "", context, base: "", head: "", repo: "",
-      groups: [{ id: "g", title: "", summary: "", risk: "bajo" as const }],
+      groups: [{ id: "g", title: "", summary: "", }],
       blocks: ["parse", "cents"].map(block),
       edges: [],
       decisions: [{ id: "d", from: "parse", condition: "", status: "nueva" as const, summary: "", evidence: "", outcomes: [{ id: "si", label: "sí", to: "cents" }, { id: "no", label: "no", end: { label: "400", tone: "error" as const } }] }],

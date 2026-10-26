@@ -13,7 +13,7 @@ export function Sidebar() {
       <input className="filter" placeholder="Filtrar…" value={q} onChange={(e) => setQ(e.target.value)} />
 
       <nav className="tree">
-        {analysis.groups.map((g) => {
+        {analysis.groups.map((g, gi) => {
           const groupOf = (id: string) => analysis.blocks.find((b) => b.id === (analysis.decisions.find((d) => d.id === id)?.from ?? id))?.group;
           const items = analysis.tour
             .filter((id) => groupOf(id) === g.id)
@@ -28,7 +28,7 @@ export function Sidebar() {
           return (
             <section key={g.id} className={`tree-group ${g.minor ? "is-minor" : ""}`}>
               <h3>
-                <span className={`risk-dot risk-${g.risk}`} />
+                <span className="group-n">{gi + 1}</span>
                 {g.title}
               </h3>
               <ul>

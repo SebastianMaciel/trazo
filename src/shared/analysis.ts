@@ -1,6 +1,5 @@
 import type { DiffLine } from "./diff.js";
 
-export type Risk = "alto" | "medio" | "bajo";
 export type BlockKind = "endpoint" | "función" | "componente" | "tipo" | "config" | "test" | "copy";
 /** affected = no cambió ninguna línea, pero le llegan datos distintos */
 export type RowChange = "added" | "modified" | "deleted" | "affected";
@@ -43,7 +42,6 @@ export interface Block {
   title: string;
   file: string;
   kind: BlockKind;
-  risk: Risk;
   summary: string;
   warnings?: string[];
   rows: Row[];
@@ -57,7 +55,6 @@ export interface Group {
   id: string;
   title: string;
   summary: string;
-  risk: Risk;
   minor?: boolean;
 }
 

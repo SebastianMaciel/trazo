@@ -20,16 +20,14 @@ export const mockAnalysis: Analysis = {
       id: "g-conv",
       title: "El monto se lee y se convierte bien",
       summary: "Antes \"1.234,56\" se leía como 1,23 pesos y los centavos se truncaban. Ahora se parsea en formato argentino y se redondea.",
-      risk: "alto",
     },
     {
       id: "g-uso",
       title: "Lo que consume los montos",
       summary: "Se saca un parche que compensaba el redondeo y las cuotas reparten el resto.",
-      risk: "medio",
     },
-    { id: "g-tests", title: "Tests nuevos", summary: "Cubren el parseo y el redondeo.", risk: "bajo" },
-    { id: "g-menor", title: "Cambios menores", summary: "Textos de la interfaz.", risk: "bajo", minor: true },
+    { id: "g-tests", title: "Tests nuevos", summary: "Cubren el parseo y el redondeo." },
+    { id: "g-menor", title: "Cambios menores", summary: "Textos de la interfaz.", minor: true },
   ],
   blocks: [
     {
@@ -38,7 +36,6 @@ export const mockAnalysis: Analysis = {
       title: "handleCheckout",
       file: "src/api/checkout.ts",
       kind: "endpoint",
-      risk: "medio",
       summary: "El endpoint deja de usar parseFloat y rechaza montos que no se pueden leer.",
       rows: [
         { id: "r-h-parse", change: "modified", label: "parseARS(body.amount)", before: "parseFloat(body.amount)" },
@@ -67,7 +64,6 @@ export const mockAnalysis: Analysis = {
       title: "parseARS",
       file: "src/money.ts",
       kind: "función",
-      risk: "alto",
       summary: "Función nueva que lee montos escritos en formato argentino: punto de miles y coma decimal.",
       warnings: ["\"1234.56\" con punto decimal se lee como 123456. Si algún cliente manda el formato inglés, cobra 100 veces más."],
       rows: [
@@ -97,7 +93,6 @@ export const mockAnalysis: Analysis = {
       title: "toCents",
       file: "src/money.ts",
       kind: "función",
-      risk: "alto",
       summary: "Redondea en vez de truncar. 19,99 × 100 da 1998,9999 en coma flotante y floor se comía un centavo.",
       rows: [{ id: "r-c-round", change: "modified", label: "Math.round(amount * 100)", before: "Math.floor(amount * 100)" }],
       hunks: [
@@ -117,7 +112,6 @@ export const mockAnalysis: Analysis = {
       title: "cartTotal",
       file: "src/cart.ts",
       kind: "función",
-      risk: "medio",
       summary: "Se borra un parche que sumaba un centavo por ítem para tapar el bug de toCents.",
       rows: [
         { id: "r-ca-sum", change: "affected", label: "suma toCents(price) × qty" },
@@ -141,7 +135,6 @@ export const mockAnalysis: Analysis = {
       title: "calcInstallments",
       file: "src/installments.ts",
       kind: "función",
-      risk: "medio",
       summary: "Las cuotas ya no suman más que el total: el resto va a la primera.",
       rows: [
         { id: "r-i-base", change: "modified", label: "Math.floor(total / n)", before: "Math.ceil(total / n)" },
@@ -167,7 +160,6 @@ export const mockAnalysis: Analysis = {
       title: "buildInvoice",
       file: "src/invoice.ts",
       kind: "función",
-      risk: "medio",
       affected: true,
       summary: "No cambió ninguna línea, pero ahora recibe montos distintos. Las facturas ya emitidas no se recalculan.",
       warnings: ["Una factura vieja y una nueva por la misma compra pueden diferir en algunos centavos."],
@@ -183,7 +175,6 @@ export const mockAnalysis: Analysis = {
       title: "money.test.ts",
       file: "src/money.test.ts",
       kind: "test",
-      risk: "bajo",
       summary: "Tres casos nuevos para parseARS y toCents.",
       warnings: ["Falta un caso con punto decimal (\"1234.56\")."],
       rows: [
@@ -214,7 +205,6 @@ export const mockAnalysis: Analysis = {
       title: "copy.ts",
       file: "src/copy.ts",
       kind: "copy",
-      risk: "bajo",
       summary: "Dos textos de la interfaz.",
       rows: [
         { id: "r-co-1", change: "modified", label: "\"Total a pagar\"", before: "\"Total\"" },

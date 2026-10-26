@@ -16,7 +16,7 @@ export function GroupNode({ data, width = 0 }: NodeProps<Node<GroupNodeData>>) {
   const size = Math.min(64, Math.max(20, 20 / zoom), fit);
 
   return (
-    <div className={`group risk-${group.risk} ${group.minor ? "is-minor" : ""} ${dimmed ? "is-dimmed" : ""} ${far ? "is-far" : ""} ${intent ? "is-intent" : ""}`}>
+    <div className={`group ${group.minor ? "is-minor" : ""} ${dimmed ? "is-dimmed" : ""} ${far ? "is-far" : ""} ${intent ? "is-intent" : ""}`}>
       {intent ? (
         // Vista de intención: el grupo tapa sus bloques y dice qué cambia, en letra de tamaño fijo en pantalla.
         // Si no entra, queda su número, el mismo de la lista del panel
