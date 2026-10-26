@@ -34,6 +34,7 @@ export function GroupNode({ data, width = 0 }: NodeProps<Node<GroupNodeData>>) {
         </div>
       ) : (
         <div className="group-head" style={{ fontSize: size }}>
+          <span className="group-n">{n}</span>
           <span className="group-title">{group.title}</span>
           <span className="group-progress" style={{ fontSize: Math.max(13, size * 0.55) }}>
             {done}/{total}
