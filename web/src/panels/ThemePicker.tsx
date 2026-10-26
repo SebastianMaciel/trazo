@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Los temas para probar. Los colores de acá son solo la muestra del menú; los de verdad están en themes.css */
+/** Los colores de verdad están en themes.css; la muestra del menú se pinta con el tema mismo */
 export const THEMES = [
-  { id: "noche", name: "Noche", note: "el de siempre", swatch: ["#080d1c", "#111a33", "#f5b942", "#4ade80", "#fb7185"], display: "Space Grotesk Variable" },
-  { id: "nord", name: "Nord", note: "azules árticos apagados", swatch: ["#242933", "#3b4252", "#88c0d0", "#a3be8c", "#b48ead"], display: "Inter Variable" },
-  { id: "github", name: "GitHub", note: "el dark de github.com", swatch: ["#010409", "#151b23", "#4493f8", "#3fb950", "#f85149"], display: "Inter Variable" },
-  { id: "matrix", name: "Matrix", note: "verde, de noche y tranquilo", swatch: ["#070d0a", "#15241c", "#5ee08f", "#7fd6c2", "#d7c96b"], display: "Inter Variable" },
-  { id: "ambar", name: "Ámbar", note: "monitor de fósforo ámbar", swatch: ["#0e0902", "#241808", "#ffb000", "#ffd27a", "#ff6a3d"], display: "IBM Plex Mono" },
-  { id: "muthur", name: "MU-TH-UR 6000", note: "la computadora de la Nostromo", swatch: ["#020605", "#0a1c17", "#bfffe9", "#7dffcb", "#ff7a6e"], display: "Share Tech Mono" },
-  { id: "paper", name: "Paper", note: "claro, papel de e-reader", swatch: ["#e9e4d6", "#f6f2e8", "#22201b", "#8a4b12", "#3f6b2a"], display: "Literata Variable" },
-  { id: "psycho", name: "Psycho", note: "claro, para los que programan con el sol de frente", swatch: ["#f3f4f6", "#ffffff", "#16181d", "#0a66d6", "#cf222e"], display: "Inter Variable" },
+  { id: "noche", name: "Noche", note: "el de siempre", display: "Space Grotesk Variable" },
+  { id: "nord", name: "Nord", note: "azules árticos apagados", display: "Inter Variable" },
+  { id: "github", name: "GitHub", note: "el dark de github.com", display: "Inter Variable" },
+  { id: "matrix", name: "Matrix", note: "verde, de noche y tranquilo", display: "Inter Variable" },
+  { id: "ambar", name: "Ámbar", note: "monitor de fósforo ámbar", display: "IBM Plex Mono" },
+  { id: "muthur", name: "MU-TH-UR 6000", note: "la computadora de la Nostromo", display: "Share Tech Mono" },
+  { id: "paper", name: "Paper", note: "claro, papel de e-reader", light: true, display: "Literata Variable" },
+  { id: "psycho", name: "Psycho", note: "claro, para los que programan con el sol de frente", light: true, display: "Inter Variable" },
 ] as const;
 
 type ThemeId = (typeof THEMES)[number]["id"];
@@ -25,8 +25,7 @@ export function savedTheme(): ThemeId {
 }
 
 export function applyTheme(id: ThemeId) {
-  if (id === "noche") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = id;
+  paint(id);
   try {
     localStorage.setItem(KEY, id);
   } catch {
@@ -34,18 +33,50 @@ export function applyTheme(id: ThemeId) {
   }
 }
 
+/** Solo pinta, no guarda: para mostrar un tema mientras pasás el mouse */
+function paint(id: ThemeId) {
+  if (id === "noche") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = id;
+}
+
+/** Un pedacito de trazo pintado con el tema: un bloque con sus filas y una flecha que sale */
+function Sample({ id }: { id: ThemeId }) {
+  return (
+    <span className="ts" data-theme={id} aria-hidden>
+      <span className="ts-block">
+        <span className="ts-head">
+          <span className="ts-title">cartTotals</span>
+          <span className="ts-chip">función</span>
+        </span>
+        <span className="ts-row ts-added">+ descuento sobre el neto</span>
+        <span className="ts-row ts-modified">~ un cupón o ninguno</span>
+        <span className="ts-row ts-deleted">− suma todos los cupones</span>
+      </span>
+      <span className="ts-wire" />
+      <span className="ts-dot" />
+    </span>
+  );
+}
+
 export function ThemePicker() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(savedTheme);
   const ref = useRef<HTMLDivElement>(null);
+  // Al cerrar sin elegir vuelve el que tenías
+  const close = () => {
+    paint(current);
+    setOpen(false);
+  };
+  const closeRef = useRef(close);
+  closeRef.current = close;
   useEffect(() => {
     if (!open) return;
-    const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("pointerdown", close);
+    const outside = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && closeRef.current();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
+    document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", esc);
     return () => {
-      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("pointerdown", outside);
       document.removeEventListener("keydown", esc);
     };
   }, [open]);
@@ -56,31 +87,43 @@ export function ThemePicker() {
     setOpen(false);
   };
 
+  const section = (title: string, light: boolean) => (
+    <section className="theme-section">
+      <h4>{title}</h4>
+      <div className="theme-grid">
+        {THEMES.filter((t) => ("light" in t) === light).map((t) => (
+          <button
+            key={t.id}
+            className={`theme-item ${t.id === current ? "is-current" : ""}`}
+            onClick={() => pick(t.id)}
+            onPointerEnter={() => paint(t.id)}
+            onFocus={() => paint(t.id)}
+          >
+            <Sample id={t.id} />
+            <span className="theme-text">
+              <span className="theme-name" style={{ fontFamily: `"${t.display}"` }}>
+                {t.name}
+                {t.id === current && <span className="theme-on">en uso</span>}
+              </span>
+              <span className="theme-note">{t.note}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+
   return (
     <div className="theme-picker" ref={ref}>
-      <button className="btn btn-ghost" onClick={() => setOpen(!open)} aria-expanded={open}>
+      <button className="btn btn-ghost" onClick={() => (open ? close() : setOpen(true))} aria-expanded={open}>
         Tema
       </button>
       {open && (
-        <ul className="theme-menu">
-          {THEMES.map((t) => (
-            <li key={t.id}>
-              <button className={`theme-item ${t.id === current ? "is-current" : ""}`} onClick={() => pick(t.id)}>
-                <span className="theme-swatch" style={{ background: t.swatch[0] }}>
-                  {t.swatch.slice(1).map((c) => (
-                    <span key={c} style={{ background: c }} />
-                  ))}
-                </span>
-                <span className="theme-text">
-                  <span className="theme-name" style={{ fontFamily: `"${t.display}"` }}>
-                    {t.name}
-                  </span>
-                  <span className="theme-note">{t.note}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="theme-menu" onPointerLeave={() => paint(current)}>
+          <p className="theme-hint">Pasá el mouse para verlo en toda la app. Clic para quedártelo.</p>
+          {section("Oscuros", false)}
+          {section("Claros", true)}
+        </div>
       )}
     </div>
   );

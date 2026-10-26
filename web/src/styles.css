@@ -1,4 +1,5 @@
-:root {
+/* También en cada [data-theme]: así una muestra de otro tema recalcula sus colores derivados */
+:root, [data-theme] {
   --bg: #080d1c;
   --bg-2: #0d1428;
   --panel: #111a33;
@@ -532,21 +533,40 @@ button.pill-head:hover { background: var(--panel-2); }
 /* ---------- selector de tema ---------- */
 .theme-picker { position: relative; }
 .theme-menu {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: 300px; list-style: none; margin: 0; padding: 6px;
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 20; width: min(880px, calc(100vw - 40px)); max-height: calc(100vh - 90px); overflow: auto; padding: 18px;
   background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--radius-lg, 12px); box-shadow: 0 24px 60px var(--shadow);
 }
+.theme-hint { margin: 0 0 14px; font-size: 13px; color: var(--muted); }
+.theme-section + .theme-section { margin-top: 22px; }
+.theme-section h4 { margin: 0 0 10px; font: 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .theme-item {
-  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: var(--radius-sm, 8px);
-  background: none; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 10px; padding: 8px 8px 12px; border: 1px solid transparent; border-radius: var(--radius, 10px);
+  background: none; cursor: pointer; text-align: left; color: inherit;
 }
-.theme-item:hover { background: var(--panel); }
-.theme-item.is-current { background: var(--panel-2); }
-.theme-swatch { display: flex; align-items: flex-end; gap: 3px; padding: 6px; width: 72px; height: 40px; flex: none; border: 1px solid var(--line-2); }
-.theme-swatch span { flex: 1; height: 100%; }
-.theme-swatch span:first-child { height: 60%; }
-.theme-text { display: grid; gap: 2px; }
-.theme-name { font-size: 20px; line-height: 1.1; color: var(--text); }
-.theme-note { font-size: 13px; color: var(--muted); }
+.theme-item:hover { background: var(--panel); border-color: var(--line-2); }
+.theme-item.is-current { border-color: var(--text); }
+.theme-text { display: grid; gap: 3px; padding: 0 4px; }
+.theme-name { display: flex; align-items: center; gap: 8px; font-size: 18px; line-height: 1.15; color: var(--text); }
+.theme-on { font: 600 11px var(--sans); padding: 2px 7px; border-radius: var(--radius-sm, 6px); background: var(--text); color: var(--bg); }
+.theme-note { font-size: 13px; line-height: 1.35; color: var(--muted); }
+
+/* La muestra: un bloque de verdad en miniatura, pintado con las variables de su tema */
+.ts {
+  position: relative; display: block; height: 112px; padding: 12px 0 0 12px; overflow: hidden;
+  background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--radius-sm, 8px);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px); background-size: 12px 12px;
+}
+.ts-block { display: block; width: 206px; transform: scale(0.88); transform-origin: top left; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--radius-sm, 8px); overflow: hidden; }
+.ts-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.ts-title { font: 600 12px var(--mono); color: var(--text); }
+.ts-chip { font: 600 9px var(--mono); text-transform: uppercase; color: var(--muted); padding: 1px 5px; border: 1px solid var(--line-2); border-radius: var(--radius-sm, 4px); }
+.ts-row { display: block; padding: 4px 10px; font: 10.5px/1.3 var(--mono); color: var(--text-2, var(--text)); white-space: nowrap; }
+.ts-added { background: var(--add-bg); }
+.ts-modified { background: var(--mod-bg); }
+.ts-deleted { background: var(--del-bg); color: color-mix(in srgb, var(--del) 65%, var(--hi)); text-decoration: line-through; }
+.ts-wire { position: absolute; left: 194px; right: 0; top: 46px; height: 2px; background: var(--accent); }
+.ts-dot { position: absolute; left: 216px; top: 43px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
 /* ---------- notas al lado del código ---------- */
 .code.with-notes .seg { display: grid; grid-template-columns: minmax(0, 1fr) 260px; }
