@@ -28,17 +28,32 @@ export interface Step {
   where: string;
   /** Lo que avisó la AI sobre este paso */
   warnings: string[];
+  /** Qué hace, en una línea */
+  summary: string;
+  /** "Condición" o el tipo de bloque */
+  kind: string;
+  group: string;
 }
 
 /** Un paso del recorrido (bloque o rombo) con lo necesario para nombrarlo en la review */
 export function stepOf(a: Analysis, id: string): Step {
+  const groupOf = (blockId: string) => a.groups.find((g) => g.id === a.blocks.find((b) => b.id === blockId)?.group)?.title ?? "";
   const d = a.decisions.find((x) => x.id === id);
-  if (d) return { id, title: d.condition, where: d.evidence, warnings: (d.cases ?? []).flatMap((c) => (c.warning ? [`${c.input}: ${c.warning}`] : [])) };
+  if (d)
+    return {
+      id,
+      title: d.condition,
+      where: d.evidence,
+      warnings: (d.cases ?? []).flatMap((c) => (c.warning ? [`${c.input}: ${c.warning}`] : [])),
+      summary: d.summary,
+      kind: "condición",
+      group: groupOf(d.from),
+    };
   const b = a.blocks.find((x) => x.id === id)!;
   const h = focusHunk(b.hunks);
   const line = h && focusOf(h).lines.find((l) => l.newNo ?? l.oldNo);
   const no = line ? (line.newNo ?? line.oldNo) : null;
-  return { id, title: b.title, where: no ? `${b.file}:${no}` : b.file, warnings: b.warnings ?? [] };
+  return { id, title: b.title, where: no ? `${b.file}:${no}` : b.file, warnings: b.warnings ?? [], summary: b.summary, kind: b.kind, group: groupOf(b.id) };
 }
 
 export type ReviewStatus = "cambios" | "dudas" | "pendiente" | "aprobado";

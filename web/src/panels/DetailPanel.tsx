@@ -303,10 +303,7 @@ function Summary() {
       <StepList title="Pedís cambios" tone="change" steps={r.changes} />
       <StepList title="Tus dudas" tone="doubt" steps={r.doubts} />
       <StepList title="La AI avisó algo y lo diste por bueno" tone="warn" steps={r.okWithWarnings} hint="Fijate que haya sido a conciencia" />
-      <div className="draft">
-        <p className="eyebrow">Borrador para el PR</p>
-        <pre>{r.draft}</pre>
-      </div>
+      <Draft text={r.draft} />
 
       {r.pending.length > 0 && <Pending steps={r.pending} />}
     </div>
@@ -337,7 +334,24 @@ function StepList({ title, tone, steps, hint }: { title: string; tone: string; s
   );
 }
 
-/** Lo que falta, compacto: es para volver, no para leer */
+/** El texto para pegar en GitHub o GitLab, con su botón de copiar a la vista */
+function Draft({ text }: { text: string }) {
+  const { copy, label, state } = useCopyDraft();
+  return (
+    <div className="draft">
+      <div className="draft-head">
+        <p className="eyebrow">Borrador para el PR</p>
+        <button className={`btn draft-copy ${state !== "idle" ? `is-${state}` : ""}`} onClick={copy}>
+          {label}
+        </button>
+      </div>
+      <pre>{text}</pre>
+      <p className="draft-hint">Pegalo en el PR de GitHub o GitLab. Está en Markdown.</p>
+    </div>
+  );
+}
+
+/** Lo que falta, uno por fila: qué es, dónde está y si la AI avisó algo */
 function Pending({ steps }: { steps: Step[] }) {
   const { select } = useReview();
   return (
@@ -345,30 +359,50 @@ function Pending({ steps }: { steps: Step[] }) {
       <h2>
         Te {steps.length === 1 ? "falta 1 paso" : `faltan ${steps.length} pasos`}
       </h2>
-      <div className="pending">
+      <ul>
         {steps.map((s) => (
-          <button key={s.id} className="pending-chip" onClick={() => select(s.id)}>
-            {s.title}
-          </button>
+          <li key={s.id}>
+            <button className="review-item" onClick={() => select(s.id)}>
+              <span className="review-meta">
+                {s.kind} · {s.group}
+              </span>
+              <span className="review-title">{s.title}</span>
+              <span className="review-where">{s.where}</span>
+              <span className="review-note">{s.summary}</span>
+              {s.warnings.length > 0 && (
+                <span className="review-warn">
+                  ! {s.warnings.length === 1 ? "1 aviso de la AI" : `${s.warnings.length} avisos de la AI`}
+                </span>
+              )}
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
 
-function SummaryFoot() {
-  const { analysis, verdicts, notes, tourStep } = useReview();
+/** Copiar el borrador: avisa si salió o si el navegador no dejó */
+function useCopyDraft() {
+  const { analysis, verdicts, notes } = useReview();
   const tour = useVisible().tour;
-  const [copied, setCopied] = useState<"idle" | "ok" | "error">("idle");
+  const [state, setState] = useState<"idle" | "ok" | "error">("idle");
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(summarize(analysis, tour, verdicts, notes).draft);
-      setCopied("ok");
+      setState("ok");
     } catch {
-      setCopied("error");
+      setState("error");
     }
-    setTimeout(() => setCopied("idle"), 2200);
+    setTimeout(() => setState("idle"), 2200);
   };
+  const label = state === "ok" ? "Copiado ✓" : state === "error" ? "No se pudo copiar" : "Copiar texto";
+  return { copy, label, state };
+}
+
+function SummaryFoot() {
+  const { tourStep } = useReview();
+  const { copy, label } = useCopyDraft();
   return (
     <nav className="stepper">
       <div className="stepper-btns">
@@ -377,7 +411,7 @@ function SummaryFoot() {
           Volver
         </button>
         <button className="btn btn-primary" onClick={copy}>
-          {copied === "ok" ? "Copiado ✓" : copied === "error" ? "No se pudo copiar" : "Copiar borrador"}
+          {label}
         </button>
       </div>
     </nav>

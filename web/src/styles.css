@@ -599,9 +599,11 @@ button.topbar-progress:hover, button.topbar-progress.is-on { border-color: var(-
   font: 13px/1.55 var(--mono); color: var(--text-2); background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius-sm);
 }
 .draft { margin: 0 0 22px; }
-.pending { display: flex; flex-wrap: wrap; gap: 6px; }
-.pending-chip {
-  padding: 5px 10px; cursor: pointer; font: 13px var(--mono); color: var(--text-2);
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
-}
-.pending-chip:hover { border-color: var(--line-2); color: var(--text); }
+.draft-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.draft-head .eyebrow { margin: 0; }
+.draft-copy { font-size: 13px; min-height: 32px; padding: 4px 12px; }
+.draft-copy.is-ok { border-color: var(--add); color: var(--add); }
+.draft-copy.is-error { border-color: var(--del); color: var(--del); }
+.draft-hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.review-meta { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.review-warn { margin-top: 4px; font: 600 13px var(--sans); color: var(--del); }
