@@ -3,6 +3,15 @@ import { hunk } from "./hunk";
 
 export const mockAnalysis: Analysis = {
   title: "Corrige la conversión de montos",
+  context: {
+    before: "El checkout leía el monto con parseFloat y toCents truncaba los centavos. Un parche en el carrito sumaba un centavo por ítem para tapar la diferencia.",
+    problem: "\"1.234,56\" se cobraba $ 1,23, y en cada compra se perdían o se inventaban centavos.",
+    goal: "Que el monto se lea en formato argentino, que uno ilegible se rechace y que ningún centavo se pierda en el camino.",
+    verdict: {
+      status: "con-detalles",
+      text: "Ojo: un monto con punto decimal (\"1234.56\") se lee como 123456 y se cobra 100 veces más.",
+    },
+  },
   repo: "trazo-demo",
   base: "main",
   head: "fix/conversion-montos",

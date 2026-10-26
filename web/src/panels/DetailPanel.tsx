@@ -17,12 +17,38 @@ export function DetailPanel() {
   );
 }
 
+const VERDICT = { resuelve: "Lo resuelve", "con-detalles": "Lo resuelve, con detalles", "no-resuelve": "No lo resuelve" } as const;
+
+/** La primera pantalla: de dónde venimos, adónde queremos llegar y qué tanto lo logra el PR */
 function Overview() {
   const analysis = useVisible();
+  const { context: c } = analysis;
   return (
     <div className="detail-inner">
       <p className="eyebrow">El cambio</p>
       <h1 className="detail-title">{analysis.title}</h1>
+
+      <ol className="story">
+        <li>
+          <span className="story-label">Veníamos de</span>
+          <p>{c.before}</p>
+        </li>
+        <li className="is-problem">
+          <span className="story-label">El problema</span>
+          <p>{c.problem}</p>
+        </li>
+        <li className="is-goal">
+          <span className="story-label">Adónde queremos llegar</span>
+          <p>{c.goal}</p>
+        </li>
+      </ol>
+
+      <section className={`pr-verdict is-${c.verdict.status}`}>
+        <span className="pr-verdict-label">Este PR · {VERDICT[c.verdict.status]}</span>
+        <p>{c.verdict.text}</p>
+      </section>
+
+      <p className="eyebrow">El recorrido</p>
       <ol className="overview">
         {analysis.groups.map((g, i) => (
           <li key={g.id}>

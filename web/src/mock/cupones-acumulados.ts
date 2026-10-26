@@ -3,6 +3,15 @@ import { hunk } from "./hunk";
 
 export const cuponesAnalysis: Analysis = {
   title: "Un solo cupón por compra, descontado antes del IVA",
+  context: {
+    before: "El checkout aceptaba cualquier cantidad de cupones y calculaba el descuento sobre el precio con IVA.",
+    problem: "Dos cupones se sumaban, y un 10% terminaba descontando 12,1%: una compra de $ 121.000 se cobraba $ 106.359 en vez de $ 108.900.",
+    goal: "Un solo cupón por compra, vigente y que llegue al mínimo, descontado sobre el neto y visible en las cuotas, la factura y el mail.",
+    verdict: {
+      status: "con-detalles",
+      text: "Dos cosas para revisar: el cupón deja de valer su último día, y la migración falla si ya hay órdenes con dos cupones.",
+    },
+  },
   repo: "trazo-demo",
   base: "main",
   head: "fix/cupones-acumulados",

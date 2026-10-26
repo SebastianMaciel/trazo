@@ -89,6 +89,7 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 
 `claude -p` recibe el diff + acceso de lectura al repo y devuelve:
 
+- `context`: la primera pantalla, para alguien que llega con sus propios quilombos. Cómo andaba antes, qué salía mal (con un caso concreto), cómo debería andar y qué tanto lo logra el PR (`resuelve` / `con-detalles` / `no-resuelve`) con lo que falta revisar. Cuando haya ticket de Jira, el "cómo debería andar" sale de ahí.
 - `groups[]`: id, título de intención y resumen de una línea.
 - `blocks[]`: id, group, título, explicación corta, `hunks[]` (archivo + rango de líneas del diff) y nivel de riesgo (bajo/medio/alto).
 - `hunks[].notes[]`: notas que explican grupos de líneas seguidas (rango + texto de una o dos frases). Dicen el efecto, no repiten el código, y marcan el riesgo si lo hay. Se muestran al lado del código: nadie lee código pelado.

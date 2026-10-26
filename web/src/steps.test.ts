@@ -3,11 +3,13 @@ import type { Analysis, Block, Edge } from "../../src/shared/analysis";
 import { computeSteps } from "./steps";
 
 const block = (id: string): Block => ({ id, group: "g", title: id, file: "", kind: "función", risk: "bajo", summary: "", rows: [], hunks: [] });
+const context: Analysis["context"] = { before: "", problem: "", goal: "", verdict: { status: "resuelve", text: "" } };
 const edge = (from: string, to: string, kind: Edge["kind"] = "datos"): Edge => ({ id: `${from}-${to}`, from, to, kind, label: "", evidence: "" });
 
 function setup(edges: Edge[], tour: string[]) {
   const analysis: Analysis = {
     title: "",
+    context,
     base: "",
     head: "",
     repo: "",
@@ -42,7 +44,7 @@ describe("computeSteps", () => {
 
   it("un rombo es un paso entre el bloque del que sale y el que sigue", () => {
     const a = {
-      title: "", base: "", head: "", repo: "",
+      title: "", context, base: "", head: "", repo: "",
       groups: [{ id: "g", title: "", summary: "", risk: "bajo" as const }],
       blocks: ["parse", "cents"].map(block),
       edges: [],

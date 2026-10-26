@@ -112,8 +112,24 @@ export interface Decision {
   hunk?: HunkView;
 }
 
+/** Qué tanto resuelve el PR lo que se quería */
+export type PrVerdict = "resuelve" | "con-detalles" | "no-resuelve";
+
+/** El contexto para alguien que llega con la cabeza en otra cosa: de dónde venimos y adónde queremos llegar */
+export interface Context {
+  /** Cómo andaba antes */
+  before: string;
+  /** Qué salía mal, con un caso concreto */
+  problem: string;
+  /** Cómo debería andar */
+  goal: string;
+  /** Qué tanto lo logra este PR, y qué falta revisar */
+  verdict: { status: PrVerdict; text: string };
+}
+
 export interface Analysis {
   title: string;
+  context: Context;
   base: string;
   head: string;
   repo: string;
