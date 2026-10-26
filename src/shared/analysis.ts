@@ -125,6 +125,8 @@ export interface Context {
 }
 
 export interface Analysis {
+  /** Identifica el par de commits (repo, merge-base, head). Ahí se guardan los veredictos */
+  key?: string;
   title: string;
   context: Context;
   base: string;

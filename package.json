@@ -1,6 +1,6 @@
 {
   "name": "trazo",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "Code review visual y guiado: el diff como mapa de bloques conectados",
   "type": "module",
   "bin": {
@@ -13,6 +13,7 @@
     "dev": "concurrently -k -n server,web \"tsx watch src/server/cli.ts --no-open\" \"vite\"",
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server/cli.js",
+    "trazo": "tsx src/server/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
     "prepare": "husky"

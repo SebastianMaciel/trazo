@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { getDiff, repoInfo } from "./git.js";
+import { getDiff, getRevDiff, repoInfo } from "./git.js";
 
 let dir: string;
 const g = (...args: string[]) => execFileSync("git", args, { cwd: dir, stdio: "pipe" }).toString();
@@ -39,6 +39,16 @@ describe("git", () => {
     const d = await getDiff(dir, "main", "fix/a");
     expect(d.files.map((f) => f.newPath)).toEqual(["a.ts"]);
     expect(d.mergeBase).not.toBe(d.base.sha);
+  });
+
+  it("con cualquier par de commits también compara desde el merge-base", async () => {
+    const d = await getRevDiff(dir, "main", g("rev-parse", "fix/a").trim());
+    expect(d.files.map((f) => f.newPath)).toEqual(["a.ts"]);
+  });
+
+  it("no deja pasar opciones de git disfrazadas de commit", async () => {
+    await expect(getRevDiff(dir, "main", "--output=/tmp/x")).rejects.toThrow(/no es un commit válido/);
+    await expect(getRevDiff(dir, "main", "no-existe")).rejects.toThrow(/No existe/);
   });
 
   it("rechaza ramas que no existen", async () => {
