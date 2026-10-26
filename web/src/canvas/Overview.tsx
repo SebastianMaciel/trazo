@@ -13,26 +13,6 @@ interface Rect {
   h: number;
 }
 
-type Side = "top" | "bottom" | "left" | "right";
-
-/** Altura del título: las flechas de costado salen de ahí, así quedan rectas aunque las cards midan distinto */
-const HEAD_Y = 32;
-
-/** Dónde se engancha una flecha en un lado, corrida `off` a lo largo del lado */
-function anchor(r: Rect, side: Side, off: number) {
-  if (side === "left") return { x: r.x, y: r.y + HEAD_Y + off };
-  if (side === "right") return { x: r.x + r.w, y: r.y + HEAD_Y + off };
-  if (side === "top") return { x: r.x + r.w / 2 + off, y: r.y };
-  return { x: r.x + r.w / 2 + off, y: r.y + r.h };
-}
-
-/** Por qué lados sale y entra la flecha, según dónde queda una card respecto de la otra */
-function sides(a: Rect, b: Rect): [Side, Side] {
-  const sameRow = Math.abs(a.y - b.y) < a.h / 2;
-  if (sameRow) return b.x > a.x ? ["right", "left"] : ["left", "right"];
-  return b.y > a.y ? ["bottom", "top"] : ["top", "bottom"];
-}
-
 /** El resto del pellizco que te sacó del esquema no sigue moviendo el mapa: termina cuando soltás */
 function swallowGesture() {
   let timer = 0;
@@ -47,7 +27,8 @@ function swallowGesture() {
 }
 
 /**
- * El esquema: una card por grupo, en el orden del recorrido, y flechas entre los grupos que se pasan datos.
+ * El esquema: una card por grupo, en el orden del recorrido, y de qué grupos recibe datos y a cuáles se los pasa.
+ * Escrito y no con flechas: en una grilla, las flechas entre cards que no están al lado se cruzan.
  * Es lo primero que ves y se vuelve con "Vista general". Tocar una card acerca la cámara a ese grupo
  */
 export function Overview({ analysis: a, graph, next }: { analysis: Analysis; graph: Graph; next?: string }) {
@@ -125,35 +106,29 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // Cuántas flechas usan cada lado de cada card, para no encimarlas
-  const arrows = useMemo(() => {
-    const uses = new Map<string, number>();
-    const planned = links
-      .filter((l) => rects[l.from] && rects[l.to])
-      .map((l) => {
-        const [s, t] = sides(rects[l.from], rects[l.to]);
-        const ks = `${l.from}:${s}`;
-        const kt = `${l.to}:${t}`;
-        const is = uses.get(ks) ?? 0;
-        const it = uses.get(kt) ?? 0;
-        uses.set(ks, is + 1);
-        uses.set(kt, it + 1);
-        return { l, s, t, is, it, ks, kt };
-      });
-    const spread = (k: string, i: number) => (i - ((uses.get(k) ?? 1) - 1) / 2) * 14;
-    return planned.map(({ l, s, t, is, it, ks, kt }) => {
-      const p = anchor(rects[l.from], s, spread(ks, is));
-      const q = anchor(rects[l.to], t, spread(kt, it));
-      const horiz = s === "left" || s === "right";
-      // Si salta una card del medio, la curva pasa por arriba (o por el costado) en vez de cruzarla
-      const far = horiz ? Math.abs(q.x - p.x) > rects[l.from].w * 1.6 : Math.abs(q.y - p.y) > rects[l.from].h * 1.6;
-      const bow = far ? 70 : 0;
-      const d = horiz
-        ? `M${p.x},${p.y} C${(p.x + q.x) / 2},${p.y - bow} ${(p.x + q.x) / 2},${q.y - bow} ${q.x},${q.y}`
-        : `M${p.x},${p.y} C${p.x - bow},${(p.y + q.y) / 2} ${q.x - bow},${(p.y + q.y) / 2} ${q.x},${q.y}`;
-      return { id: `${l.from}>${l.to}`, d, count: l.count };
-    });
-  }, [links, rects]);
+  /** De qué grupos recibe o a cuáles le pasa datos. Tocar uno te lleva */
+  const Flow = ({ label, ids }: { label: string; ids: string[] }) =>
+    ids.length ? (
+      <div className="ov-flow">
+        <span className="ov-flow-label">{label}</span>
+        {ids.map((id) => {
+          const i = a.groups.findIndex((x) => x.id === id);
+          return (
+            <button
+              key={id}
+              className="ov-flow-item"
+              onClick={(e) => {
+                e.stopPropagation();
+                enter(id);
+              }}
+            >
+              <span className="group-n">{i + 1}</span>
+              <span>{a.groups[i]?.title}</span>
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
 
   const groupOfStep = (id: string) => graph.nodes.find((n) => n.id === id)?.group;
   const cols = overviewCols(a.groups.length);
@@ -162,16 +137,6 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
   return (
     <div className="ov" style={style} ref={root}>
       <div className="ov-grid" ref={box}>
-        <svg className="ov-arrows" aria-hidden>
-          <defs>
-            <marker id="ov-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" />
-            </marker>
-          </defs>
-          {arrows.map((ar) => (
-            <path key={ar.id} d={ar.d} markerEnd="url(#ov-head)" />
-          ))}
-        </svg>
         {a.groups.map((g, i) => {
           const ids = graph.nodes.filter((n) => n.group === g.id && n.kind !== "end").map((n) => n.id);
           const done = ids.filter((id) => verdicts[id]).length;
@@ -195,6 +160,8 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
                 {done} de {ids.length} revisados
                 {here && <span className="ov-here">{done ? "Seguí acá" : "Empezá acá"}</span>}
               </p>
+              <Flow label="Recibe de" ids={links.filter((l) => l.to === g.id).map((l) => l.from)} />
+              <Flow label="Le pasa a" ids={links.filter((l) => l.from === g.id).map((l) => l.to)} />
               {warned.length > 0 && (
                 <ul className="ov-warns">
                   {warned.map((s) => (
