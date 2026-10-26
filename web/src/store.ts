@@ -60,7 +60,8 @@ function stepToUrl(id: string | null) {
   const q = params.toString().replace(/%2F/g, "/");
   history.replaceState(null, "", q ? `?${q}` : location.pathname);
 }
-const BASE_KEY = `trazo:${initial.base}..${initial.head}`;
+// Los veredictos van por par de commits: si el MR suma un commit, es otra review
+const BASE_KEY = initial.key ? `trazo:${initial.key}` : `trazo:${initial.base}..${initial.head}`;
 
 function load<T>(key: string, fallback: T): T {
   try {
