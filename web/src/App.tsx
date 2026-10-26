@@ -22,6 +22,19 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [tourStep, setCodeOpen]);
 
+  // Pellizcar nunca agranda la página: el zoom es del mapa. Chrome lo manda como rueda con ctrl, Safari como gesto
+  useEffect(() => {
+    const noPageZoom = (e: Event) => {
+      if (e.type !== "wheel" || (e as WheelEvent).ctrlKey) e.preventDefault();
+    };
+    window.addEventListener("wheel", noPageZoom, { passive: false });
+    for (const t of ["gesturestart", "gesturechange"]) document.addEventListener(t, noPageZoom);
+    return () => {
+      window.removeEventListener("wheel", noPageZoom);
+      for (const t of ["gesturestart", "gesturechange"]) document.removeEventListener(t, noPageZoom);
+    };
+  }, []);
+
   return (
     <ReactFlowProvider>
       <div className="app">

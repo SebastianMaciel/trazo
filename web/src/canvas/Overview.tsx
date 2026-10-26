@@ -65,14 +65,38 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
     return () => ro.disconnect();
   }, [a, links]);
 
-  // La rueda y el pellizco sobre las cards siguen moviendo el mapa de abajo
+  /** Entrar a un grupo. Si entero no entra a un zoom que se lea, te deja donde seguir adentro del grupo */
+  const enter = (groupId: string) => {
+    const ids = graph.nodes.filter((n) => n.group === groupId && n.kind !== "end").map((n) => n.id);
+    const inGroup = useReview.getState().tourOrder.filter((id) => ids.includes(id));
+    const focus = inGroup.find((id) => !verdicts[id]) ?? inGroup[0] ?? ids[0];
+    frame([groupId], { pad: 60, maxZoom: 0.9, minZoom: { zoom: 0.5, focus, lead: true } });
+  };
+  const enterRef = useRef(enter);
+  enterRef.current = enter;
+  const rectsRef = useRef(rects);
+  rectsRef.current = rects;
+
+  // El esquema no tiene la geometría del mapa: pellizcar para acercarte entra al grupo más cercano al dedo,
+  // una sola vez por gesto. Alejarte no hace nada, ya estás en lo más lejos
+  const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const el = box.current;
-    const pane = document.querySelector(".react-flow__pane");
-    if (!el || !pane) return;
+    const el = root.current;
+    if (!el) return;
+    let quietUntil = 0;
     const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return; // dos dedos sin pellizcar: scroll normal del esquema
       e.preventDefault();
-      pane.dispatchEvent(new WheelEvent("wheel", e));
+      const now = performance.now();
+      const busy = now < quietUntil;
+      quietUntil = now + 400;
+      if (busy || e.deltaY >= 0) return;
+      const base = box.current!.getBoundingClientRect();
+      const px = e.clientX - base.left;
+      const py = e.clientY - base.top;
+      const dist = (r: Rect) => Math.hypot(Math.max(r.x - px, 0, px - r.x - r.w), Math.max(r.y - py, 0, py - r.y - r.h));
+      const near = Object.entries(rectsRef.current).sort(([, p], [, q]) => dist(p) - dist(q))[0];
+      if (near) enterRef.current(near[0]);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -113,7 +137,7 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
   const style = { left: area.x, width: area.w, "--cols": cols } as CSSProperties;
 
   return (
-    <div className="ov" style={style}>
+    <div className="ov" style={style} ref={root}>
       <div className="ov-grid" ref={box}>
         <svg className="ov-arrows" aria-hidden>
           <defs>
@@ -137,13 +161,7 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
                 cards.current[g.id] = el;
               }}
               className={`ov-card ${done === ids.length ? "is-done" : ""} ${g.minor ? "is-minor" : ""}`}
-              onClick={() => {
-                // Si el grupo entero no entra a un zoom que se lea, te acerca a donde seguir adentro del grupo
-                const order = useReview.getState().tourOrder;
-                const inGroup = order.filter((id) => ids.includes(id));
-                const focus = inGroup.find((id) => !verdicts[id]) ?? inGroup[0] ?? ids[0];
-                frame([g.id], { pad: 60, maxZoom: 0.9, minZoom: { zoom: 0.5, focus, lead: true } });
-              }}
+              onClick={() => enter(g.id)}
             >
               <div className="ov-head">
                 <span className="group-n">{i + 1}</span>
