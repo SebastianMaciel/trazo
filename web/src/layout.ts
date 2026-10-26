@@ -6,8 +6,6 @@ import { buildGraph, outHandle, type Graph } from "./graph";
 export const MIN_TEXT_PX = 11;
 /** Las filas miden 12.5px: debajo de este zoom quedarían ilegibles y la card muestra solo su título */
 export const FAR_ZOOM = MIN_TEXT_PX / 12.5;
-/** Más lejos que esto solo se leen los grupos: la vista de intención */
-export const INTENT_ZOOM = 0.34;
 
 /** Geometría de la card: tiene que coincidir con el CSS de .block-head y .row */
 export const BLOCK_W = 340;

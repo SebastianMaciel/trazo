@@ -159,6 +159,8 @@ button.pill-head:hover { background: var(--panel-2); }
 .group.is-far .group-head { white-space: nowrap; }
 .group-head { font-family: var(--display); display: flex; align-items: center; gap: 12px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
 .group-title { color: var(--text); }
+/* Muy lejos el título no entra arriba de los bloques: sale por encima de la caja */
+.group-head.is-above { position: absolute; left: 0; bottom: 100%; margin-bottom: 0.25em; }
 .group-progress { font-family: var(--mono); color: var(--muted); font-weight: 400; }
 .group.is-far { background: var(--group-bg-far); }
 /* Lejos de todo, el mapa se esconde y queda el esquema de grupos */

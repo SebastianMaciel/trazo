@@ -4,7 +4,7 @@ import { ThemePicker } from "./ThemePicker";
 import { useReview, useVisible } from "../store";
 
 export function TopBar() {
-  const { analysis, selected, summary, verdicts, show, select, toggleShow, openSummary } = useReview();
+  const { analysis, summary, overview, setOverview, verdicts, show, toggleShow, openSummary } = useReview();
   const visible = useVisible();
   const count = (v: string) => visible.tour.filter((id) => verdicts[id] === v).length;
   const ok = count("ok");
@@ -37,7 +37,7 @@ export function TopBar() {
         </div>
       </button>
 
-      <button className="btn" onClick={() => select(null)} disabled={!selected && !summary}>
+      <button className="btn" onClick={() => setOverview(true)} disabled={overview}>
         Vista general
       </button>
       <ThemePicker />

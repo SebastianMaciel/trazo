@@ -33,10 +33,11 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const zoom = useStore((s) => Math.round(s.transform[2] * 40) / 40);
   const far = zoom < FAR_ZOOM;
   // De lejos el título apunta a 14px en pantalla, achicado para entrar en un renglón (la mono ocupa ~0.62em por letra)
-  // pero nunca debajo del mínimo legible: si ni así entra, se parte
+  // pero nunca debajo del mínimo legible. Si ni así entra, ya estás muy lejos: queda solo la forma de las filas
   const z = Math.max(zoom, 0.05);
   const fit = (BLOCK_W - 60 - (verdict ? 56 : 0)) / (block.title.length * 0.62);
-  const farSize = Math.min(56, Math.max(MIN_TEXT_PX / z, Math.min(14 / z, fit)));
+  const farSize = Math.min(14 / z, fit);
+  const farTitle = farSize * z >= MIN_TEXT_PX;
 
   const cls = ["block", far && "is-far", start && "is-start", selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
     .filter(Boolean)
@@ -78,9 +79,11 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       {/* Siempre está, así el paso de cerca a lejos es un fundido y no un salto */}
       <div className="block-far" aria-hidden={!far}>
         <div className="block-far-head" style={{ minHeight: headerHeight(block) }}>
-          <span className="block-far-title" style={{ fontSize: farSize }}>
-            {block.title}
-          </span>
+          {farTitle && (
+            <span className="block-far-title" style={{ fontSize: farSize }}>
+              {block.title}
+            </span>
+          )}
           <VerdictBadge verdict={verdict} />
         </div>
         {/* Cada fila como una línea que no se lee: avisa que acercándote hay más */}

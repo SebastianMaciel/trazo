@@ -23,6 +23,9 @@ interface ReviewState {
   /** La pantalla final: lo que pedís cambiar, tus dudas y el borrador para el PR */
   summary: boolean;
   openSummary: () => void;
+  /** El esquema de cards por grupo, en vez del mapa. Se entra a propósito, nunca por alejarte */
+  overview: boolean;
+  setOverview: (on: boolean) => void;
   show: Show;
   /** Orden del recorrido según el flujo dibujado (lo calcula el canvas después del layout) */
   tourOrder: string[];
@@ -116,7 +119,12 @@ export const useReview = create<ReviewState>((set, get) => ({
   },
   openSummary: () => {
     stepToUrl(SUMMARY);
-    set((s) => ({ selected: null, summary: true, codeOpen: false, flyTick: s.flyTick + 1 }));
+    set((s) => ({ selected: null, summary: true, overview: false, codeOpen: false, flyTick: s.flyTick + 1 }));
+  },
+  overview: !stepFromUrl() && new URLSearchParams(location.search).get("paso") !== SUMMARY,
+  setOverview: (overview) => {
+    if (overview) stepToUrl(null);
+    set((s) => ({ overview, ...(overview ? { selected: null, summary: false, codeOpen: false } : {}), flyTick: s.flyTick + 1 }));
   },
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   codeOpen: false,
@@ -131,7 +139,7 @@ export const useReview = create<ReviewState>((set, get) => ({
     const layer = block ? layerOf(analysis, block) : null;
     if (layer && !show[layer]) get().toggleShow(layer);
     stepToUrl(id);
-    set((s) => ({ selected: id, summary: false, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
+    set((s) => ({ selected: id, summary: false, overview: id ? false : s.overview, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
   setVerdict: (id, v) => {
     const verdicts = { ...get().verdicts };

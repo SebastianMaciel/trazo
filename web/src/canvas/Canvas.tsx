@@ -1,8 +1,8 @@
-import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, useStore, type Edge, type Node } from "@xyflow/react";
+import { Background, BackgroundVariant, MarkerType, PanOnScrollMode, ReactFlow, type Edge, type Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useReview, visibleAnalysis } from "../store";
 import { buildGraph, neighborsIn, wireActive } from "../graph";
-import { INTENT_ZOOM, layoutAnalysis, type Layout } from "../layout";
+import { layoutAnalysis, type Layout } from "../layout";
 import { computeSteps } from "../steps";
 import { useCssVar } from "../theme";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
@@ -27,7 +27,7 @@ export function Canvas() {
   const colorAccent = useCssVar("--accent");
   const colorWire = useCssVar("--wire");
   const colorDot = useCssVar("--dot");
-  const intent = useStore((s) => s.transform[2] < INTENT_ZOOM);
+  const intent = useReview((s) => s.overview);
 
   useEffect(() => {
     let alive = true;
@@ -126,7 +126,7 @@ export function Canvas() {
   useEffect(() => {
     if (!layout) return;
     requestAnimationFrame(() => {
-      if (!selected) return frame(graph.nodes.map((n) => n.id), { pad: 120, maxZoom: 0.9 });
+      if (!selected) return frame(graph.nodes.map((n) => n.id), { pad: 60, maxZoom: 0.9 });
       // Vecinos muy desparramados: mejor centrar solo el bloque a un zoom que se lea
       frame([...neighborsIn(graph, selected)], { pad: 80, maxZoom: 1, minZoom: { zoom: 0.95, focus: selected } });
     });

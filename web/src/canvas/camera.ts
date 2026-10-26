@@ -14,6 +14,7 @@ export function freeArea() {
 }
 
 export interface FrameOpts {
+  /** Margen alrededor, en píxeles de pantalla */
   pad: number;
   maxZoom: number;
   /** Si el encuadre queda más lejos que esto, centra solo en `focus` a ese zoom */
@@ -37,7 +38,8 @@ export function useFrame() {
         x2: Math.max(...rects.map((r) => r.x + r.w)),
         y2: Math.max(...rects.map((r) => r.y + r.h)),
       };
-      let zoom = Math.min(view.w / (box.x2 - box.x + pad * 2), view.h / (box.y2 - box.y + pad * 2), maxZoom);
+      // El margen va en píxeles de pantalla: alejado, un margen del mapa se achica a nada
+      let zoom = Math.min((view.w - pad * 2) / (box.x2 - box.x), (view.h - pad * 2) / (box.y2 - box.y), maxZoom);
       let cx = (box.x + box.x2) / 2;
       let cy = (box.y + box.y2) / 2;
       // El foco puede no estar entre los encuadrados (un bloque adentro de un grupo)

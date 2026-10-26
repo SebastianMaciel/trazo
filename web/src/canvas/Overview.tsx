@@ -33,12 +33,25 @@ function sides(a: Rect, b: Rect): [Side, Side] {
   return b.y > a.y ? ["bottom", "top"] : ["top", "bottom"];
 }
 
+/** El resto del pellizco que te sacó del esquema no sigue moviendo el mapa: termina cuando soltás */
+function swallowGesture() {
+  let timer = 0;
+  const stop = (e: WheelEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    clearTimeout(timer);
+    timer = window.setTimeout(() => window.removeEventListener("wheel", stop, true), 250);
+  };
+  window.addEventListener("wheel", stop, { capture: true, passive: false });
+  timer = window.setTimeout(() => window.removeEventListener("wheel", stop, true), 250);
+}
+
 /**
- * De lejos el mapa no se lee: se cambia por un esquema con una card por grupo, en el orden del recorrido,
- * y flechas entre los grupos que se pasan datos. Tocar una card acerca la cámara a ese grupo
+ * El esquema: una card por grupo, en el orden del recorrido, y flechas entre los grupos que se pasan datos.
+ * Es lo primero que ves y se vuelve con "Vista general". Tocar una card acerca la cámara a ese grupo
  */
 export function Overview({ analysis: a, graph, next }: { analysis: Analysis; graph: Graph; next?: string }) {
-  const { verdicts, select } = useReview();
+  const { verdicts, select, setOverview } = useReview();
   const frame = useFrame();
   const links = useMemo(() => groupLinks(graph), [graph]);
   const box = useRef<HTMLDivElement>(null);
@@ -70,15 +83,19 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
     const ids = graph.nodes.filter((n) => n.group === groupId && n.kind !== "end").map((n) => n.id);
     const inGroup = useReview.getState().tourOrder.filter((id) => ids.includes(id));
     const focus = inGroup.find((id) => !verdicts[id]) ?? inGroup[0] ?? ids[0];
-    frame([groupId], { pad: 60, maxZoom: 0.9, minZoom: { zoom: 0.5, focus, lead: true } });
+    setOverview(false);
+    // Un cuadro después: el cambio de vista también mueve la cámara (al mapa entero) y este encuadre tiene que ganar
+    requestAnimationFrame(() => requestAnimationFrame(() => frame([groupId], { pad: 60, maxZoom: 0.9, minZoom: { zoom: 0.5, focus, lead: true } })));
   };
   const enterRef = useRef(enter);
   enterRef.current = enter;
+  const setOverviewRef = useRef(setOverview);
+  setOverviewRef.current = setOverview;
   const rectsRef = useRef(rects);
   rectsRef.current = rects;
 
   // El esquema no tiene la geometría del mapa: pellizcar para acercarte entra al grupo más cercano al dedo,
-  // una sola vez por gesto. Alejarte no hace nada, ya estás en lo más lejos
+  // y para alejarte muestra el mapa entero. Una sola vez por gesto
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = root.current;
@@ -90,13 +107,19 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
       const now = performance.now();
       const busy = now < quietUntil;
       quietUntil = now + 400;
-      if (busy || e.deltaY >= 0) return;
+      if (busy || e.deltaY === 0) return;
+      if (e.deltaY > 0) {
+        swallowGesture();
+        return setOverviewRef.current(false);
+      }
       const base = box.current!.getBoundingClientRect();
       const px = e.clientX - base.left;
       const py = e.clientY - base.top;
       const dist = (r: Rect) => Math.hypot(Math.max(r.x - px, 0, px - r.x - r.w), Math.max(r.y - py, 0, py - r.y - r.h));
       const near = Object.entries(rectsRef.current).sort(([, p], [, q]) => dist(p) - dist(q))[0];
-      if (near) enterRef.current(near[0]);
+      if (!near) return;
+      swallowGesture();
+      enterRef.current(near[0]);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
