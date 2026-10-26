@@ -2,8 +2,10 @@ import ELK, { type ElkNode, type ElkPort } from "elkjs/lib/elk.bundled.js";
 import type { Analysis, Block, Row } from "../../src/shared/analysis";
 import { buildGraph, outHandle, type Graph } from "./graph";
 
-/** Debajo de este zoom las cards muestran solo el título grande */
-export const FAR_ZOOM = 0.55;
+/** Texto más chico que esto en pantalla no se lee */
+export const MIN_TEXT_PX = 11;
+/** Las filas miden 12.5px: debajo de este zoom quedarían ilegibles y la card muestra solo su título */
+export const FAR_ZOOM = MIN_TEXT_PX / 12.5;
 /** Más lejos que esto solo se leen los grupos: la vista de intención */
 export const INTENT_ZOOM = 0.34;
 

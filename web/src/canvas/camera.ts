@@ -17,7 +17,7 @@ export interface FrameOpts {
   pad: number;
   maxZoom: number;
   /** Si el encuadre queda más lejos que esto, centra solo en `focus` a ese zoom */
-  minZoom?: { zoom: number; focus: string };
+  minZoom?: { zoom: number; focus: string; lead?: boolean };
 }
 
 /** Encuadra unos nodos en el hueco libre, no en el centro de la pantalla */
@@ -40,11 +40,14 @@ export function useFrame() {
       let zoom = Math.min(view.w / (box.x2 - box.x + pad * 2), view.h / (box.y2 - box.y + pad * 2), maxZoom);
       let cx = (box.x + box.x2) / 2;
       let cy = (box.y + box.y2) / 2;
-      const me = minZoom && rects.find((r) => r.id === minZoom.focus);
+      // El foco puede no estar entre los encuadrados (un bloque adentro de un grupo)
+      const me = minZoom && flow.getInternalNode(minZoom.focus);
       if (minZoom && me && zoom < minZoom.zoom) {
         zoom = minZoom.zoom;
-        cx = me.x + me.w / 2;
-        cy = me.y + me.h / 2;
+        cx = me.internals.positionAbsolute.x + (me.measured.width ?? 0) / 2;
+        cy = me.internals.positionAbsolute.y + (me.measured.height ?? 0) / 2;
+        // El foco queda a un tercio del hueco y no en el medio: el flujo sigue hacia la derecha
+        if (minZoom.lead) cx += (view.w * 0.2) / zoom;
       }
       // setCenter centra en el canvas entero: corro el punto para que caiga en el centro del hueco libre
       const dx = (view.total / 2 - (view.x + view.w / 2)) / zoom;

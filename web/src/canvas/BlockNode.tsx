@@ -29,7 +29,11 @@ const CHANGE_MARK: Record<RowChange, string> = { added: "+", modified: "~", dele
 
 export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const { block, step, start, selected, dimmed, verdict } = data;
-  const far = useStore((s) => s.transform[2] < FAR_ZOOM);
+  // Redondeado para no redibujar todas las cards en cada paso del pellizco
+  const zoom = useStore((s) => Math.round(s.transform[2] * 40) / 40);
+  const far = zoom < FAR_ZOOM;
+  // De lejos el título nunca baja de 12px en pantalla; si no entra en un renglón, se parte
+  const farSize = Math.min(56, Math.max(12 / Math.max(zoom, 0.05), Math.min(40, (verdict ? 440 : 520) / block.title.length)));
 
   const cls = ["block", far && "is-far", start && "is-start", selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
     .filter(Boolean)
@@ -68,14 +72,13 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
         ))}
       </ul>
 
-      {far && (
-        <div className="block-far">
-          <span className="block-far-title" style={{ fontSize: Math.min(40, (verdict ? 440 : 520) / block.title.length) }}>
-            {block.title}
-          </span>
-          <VerdictBadge verdict={verdict} />
-        </div>
-      )}
+      {/* Siempre está, así el paso de cerca a lejos es un fundido y no un salto */}
+      <div className="block-far" aria-hidden={!far}>
+        <span className="block-far-title" style={{ fontSize: farSize }}>
+          {block.title}
+        </span>
+        <VerdictBadge verdict={verdict} />
+      </div>
     </div>
   );
 }

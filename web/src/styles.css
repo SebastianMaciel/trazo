@@ -232,9 +232,11 @@ button.pill-head:hover { background: var(--panel-2); }
 .block-far {
   position: absolute; inset: 0; border-radius: calc(var(--radius) - 1px); background: var(--panel);
   display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
+.block.is-far .block-far { opacity: 1; }
 .block.is-affected .block-far { background: var(--bg-2); }
-.block-far-title { font-family: var(--mono); font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+.block-far-title { font-family: var(--mono); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; text-align: center; overflow-wrap: anywhere; min-width: 0; }
 
 .h { width: 6px !important; height: 6px !important; min-width: 0; min-height: 0; border: 0 !important; background: transparent !important; }
 .h-card { top: 28px !important; }

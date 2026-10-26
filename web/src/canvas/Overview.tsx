@@ -137,7 +137,13 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
                 cards.current[g.id] = el;
               }}
               className={`ov-card ${done === ids.length ? "is-done" : ""} ${g.minor ? "is-minor" : ""}`}
-              onClick={() => frame([g.id], { pad: 60, maxZoom: 0.9 })}
+              onClick={() => {
+                // Si el grupo entero no entra a un zoom que se lea, te acerca a donde seguir adentro del grupo
+                const order = useReview.getState().tourOrder;
+                const inGroup = order.filter((id) => ids.includes(id));
+                const focus = inGroup.find((id) => !verdicts[id]) ?? inGroup[0] ?? ids[0];
+                frame([g.id], { pad: 60, maxZoom: 0.9, minZoom: { zoom: 0.5, focus, lead: true } });
+              }}
             >
               <div className="ov-head">
                 <span className="group-n">{i + 1}</span>
