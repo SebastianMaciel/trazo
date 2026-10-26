@@ -351,33 +351,44 @@ function Draft({ text }: { text: string }) {
   );
 }
 
-/** Lo que falta, uno por fila: qué es, dónde está y si la AI avisó algo */
+/** Lo que falta, agrupado por intención y con aire: que se lea como una lista de pendientes, no como un bloque */
 function Pending({ steps }: { steps: Step[] }) {
   const { select } = useReview();
+  const groups = useVisible().groups;
+  const byGroup = groups.map((g, i) => ({ g, n: i + 1, items: steps.filter((s) => s.group === g.title) })).filter((x) => x.items.length);
   return (
-    <section className="review-list tone-pending">
-      <h2>
+    <section className="pending">
+      <h2 className="pending-title">
         Te {steps.length === 1 ? "falta 1 paso" : `faltan ${steps.length} pasos`}
       </h2>
-      <ul>
-        {steps.map((s) => (
-          <li key={s.id}>
-            <button className="review-item" onClick={() => select(s.id)}>
-              <span className="review-meta">
-                {s.kind} · {s.group}
-              </span>
-              <span className="review-title">{s.title}</span>
-              <span className="review-where">{s.where}</span>
-              <span className="review-note">{s.summary}</span>
-              {s.warnings.length > 0 && (
-                <span className="review-warn">
-                  ! {s.warnings.length === 1 ? "1 aviso de la AI" : `${s.warnings.length} avisos de la AI`}
-                </span>
-              )}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {byGroup.map(({ g, n, items }) => (
+        <div key={g.id} className="pending-group">
+          <h3 className="pending-group-title">
+            <span className="group-n">{n}</span>
+            <span>{g.title}</span>
+            <span className="review-count">{items.length}</span>
+          </h3>
+          <ul>
+            {items.map((s) => (
+              <li key={s.id}>
+                <button className="pending-item" onClick={() => select(s.id)}>
+                  <span className="pending-name">
+                    <span className="review-title">{s.title}</span>
+                    <span className="pending-kind">{s.kind}</span>
+                  </span>
+                  <span className="review-where">{s.where}</span>
+                  <span className="review-note">{s.summary}</span>
+                  {s.warnings.length > 0 && (
+                    <span className="review-warn">
+                      ! {s.warnings.length === 1 ? "1 aviso de la AI" : `${s.warnings.length} avisos de la AI`}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </section>
   );
 }
