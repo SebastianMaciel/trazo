@@ -8,7 +8,7 @@ Con AI se escribe código mucho más rápido de lo que se puede revisar. Nadie l
 
 ## Qué es el MVP
 
-Un CLI que corrés adentro de un repo. Elegís una rama (o worktree) contra la base, Claude Code analiza el diff y se abre una web local con:
+Le pedís a tu Claude Code de siempre "con trazo analizá el MR 123 de ~/code/proyecto". Claude sigue [ANALIZAR.md](ANALIZAR.md): baja el MR, saca el diff numerado con trazo, escribe el análisis, lo valida con trazo hasta que pasa y abre una web local con:
 
 - **Mapa** (canvas infinito, pan + zoom): bloques de cambio agrupados por comportamiento, con flechas entre bloques relacionados aunque estén en archivos distintos.
 - **Panel de detalle** al costado: el diff real del bloque seleccionado, antes y después, y la explicación de qué cambió y por qué importa.
@@ -37,7 +37,7 @@ Referencias: un visor de JSON tipo grafo (cards con filas, conectores curvos) y 
 
 **Entra**
 - Repo git local, rama o worktree contra rama base (default: `main`, configurable).
-- Análisis con `claude -p` y salida JSON validada con schema.
+- Análisis hecho por el agente que ya usás (Claude Code), siguiendo ANALIZAR.md. trazo valida el resultado contra el diff real.
 - Mapa + panel de detalle en una sola ventana, con el divisor redimensionable.
 - Recorrido guiado y exploración libre.
 - Tildes por bloque, persistidos localmente por par de commits.
@@ -82,7 +82,7 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 | Decisión | Elegido | Por qué / trade-off |
 |---|---|---|
 | Runtime | CLI local + web en localhost | Lee git directo, el código no pasa por ningún server propio. Para compartir hay que instalar. |
-| Motor AI | Adaptadores, `claude -p` primero | Cada uno usa la AI que tiene. Ver "Adaptadores de AI". Es lento (decenas de segundos) y por eso va el cache. |
+| Motor AI | El agente interactivo de cada uno, guiado por ANALIZAR.md | Sin adaptadores ni procesos colgados: la sesión de Claude Code de siempre hace el análisis, con sus permisos y su contexto. trazo solo da el diff numerado, valida y dibuja. |
 | Front | Vite + React + TS | No hay SSR ni deploy, Next.js sobra. |
 | Canvas | React Flow (xyflow) | Pan, zoom, nodos custom y edges resueltos. |
 | Layout | ELK (elkjs) | Layout automático con grupos anidados, que es justo lo de intención → bloques. |
@@ -90,21 +90,18 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 | Server | Node + Hono | Chico, sirve la UI y expone `/api/diff`, `/api/analysis`. |
 | Estado | Store único (Zustand) con la selección separada de la UI | Pasar a 2 ventanas es sincronizar ese store por BroadcastChannel, sin tocar componentes. |
 
-### Adaptadores de AI
+### Cómo se arma un análisis
 
-trazo no depende de una AI en particular. Lo que necesita es poco: mandar el diff y un prompt, y recibir el JSON del contrato. La validación (schema, evidencia, filas de origen, hunks huérfanos) la hace siempre el server, así que la AI que sea no puede colar un mapa que mienta.
+1. `trazo diff R base head`: el diff numerado. Cada hunk tiene un id (`h7`) y cada línea su índice, su número viejo y su número nuevo.
+2. El agente escribe el borrador (`src/shared/draft.ts`): el contrato de abajo, pero los hunks se nombran por id y las notas apuntan a índices. El código nunca lo escribe la AI: lo pone trazo desde el diff real.
+3. `trazo validate R borrador.json`: lo valida contra el diff y el repo, lista todos los problemas juntos y, si pasa, lo guarda en `~/.cache/trazo` con clave `repo-mergebase-head`.
+4. `trazo serve` + `trazo open <clave>`: la web lo abre en `?a=<clave>`.
 
-Interfaz: `analyze({ repo, base, head, diff, prompt, schema }) → JSON`. Se elige con `--ai` o en la config del repo.
-
-1. **`claude`** (el primero): `claude -p` headless. Usa la suscripción de cada uno y lee el repo solo para tener contexto.
-2. **`cmd`** (el segundo): `--ai "mi-comando"`. Recibe el prompt por stdin y devuelve el JSON por stdout. Cubre cualquier CLI no interactiva (Codex con `codex exec`, Gemini CLI) y modelos locales (Ollama).
-3. **`api`** (después): una API compatible con OpenAI y la key de cada uno (OpenRouter, OpenAI). Como no puede leer el repo, trazo le manda además los archivos que toca el diff.
-
-Trade-offs: la calidad depende del modelo. Uno flojo devuelve flechas sin evidencia que el server descarta, y el mapa sale más pobre pero no miente. El costo lo pone cada uno con su suscripción o su key, nada pasa por un server nuestro.
+Cualquier agente que pueda correr comandos y leer archivos sirve (Codex, Gemini CLI). Lo que asegura la calidad mínima es el validador, no el modelo.
 
 ### Contrato con la AI
 
-`claude -p` recibe el diff + acceso de lectura al repo y devuelve:
+El agente lee el diff numerado y el repo, y escribe:
 
 - `context`: la primera pantalla, para alguien que llega con sus propios quilombos. Cómo andaba antes, qué salía mal (con un caso concreto), cómo debería andar y qué tanto lo logra el PR (`resuelve` / `con-detalles` / `no-resuelve`) con lo que falta revisar. Cuando haya ticket de Jira, el "cómo debería andar" sale de ahí.
 - `groups[]`: id, título de intención y resumen de una línea.
@@ -118,7 +115,8 @@ Reglas que valida el server (no la AI):
 - Todo hunk del diff pertenece a exactamente un bloque. Si alguno queda huérfano, va a "sin clasificar" (nunca desaparece código del review).
 - Un edge o una decisión sin evidencia, o con evidencia que no existe en el archivo, se descarta.
 - Toda flecha y todo rombo salen de una fila del bloque (`fromRow`). Si la relación está en una línea que no cambió, el bloque suma una fila "afectada" para esa línea. Sin fila de origen no se dibuja: una flecha que sale del título no dice de dónde viene.
-- Si el JSON no cumple el schema, se reintenta una vez y si vuelve a fallar se muestra el error.
+- Un hunk que no está en ningún bloque, o está en dos, es un error: el agente lo corrige y vuelve a validar.
+- Si el borrador no pasa, `trazo validate` lista todos los problemas con su ruta y el agente reintenta.
 
 ## Criterios de terminado
 
