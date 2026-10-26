@@ -181,10 +181,12 @@ export async function layoutAnalysis(a: Analysis): Promise<Layout> {
       ...SPACING,
       "elk.spacing.componentComponent": "240",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+      // Los grupos van de izquierda a derecha en su orden, aunque una flecha vuelva de uno posterior
+      "elk.partitioning.activate": "true",
     },
-    children: a.groups.map((grp) => ({
+    children: a.groups.map((grp, gi) => ({
       id: grp.id,
-      layoutOptions: { ...SPACING, "elk.padding": "[top=120,left=56,bottom=56,right=56]" },
+      layoutOptions: { ...SPACING, "elk.padding": "[top=120,left=56,bottom=56,right=56]", "elk.partitioning.partition": String(gi) },
       children: g.nodes
         .filter((n) => n.group === grp.id)
         .sort((x, y) => order(x.id) - order(y.id))
