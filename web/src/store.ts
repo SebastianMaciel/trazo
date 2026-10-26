@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Analysis, Block } from "../../src/shared/analysis";
-import { mockAnalysis } from "./mock/conversion-montos";
+import { currentCase } from "./mock";
 import { baseTour } from "./steps";
 
 export type Layer = "tests" | "minor";
@@ -32,7 +32,8 @@ interface ReviewState {
   tourStep: (dir: 1 | -1) => void;
 }
 
-const BASE_KEY = `trazo:${mockAnalysis.base}..${mockAnalysis.head}`;
+const initial = currentCase();
+const BASE_KEY = `trazo:${initial.base}..${initial.head}`;
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -78,7 +79,7 @@ export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = [
 }
 
 export const useReview = create<ReviewState>((set, get) => ({
-  analysis: mockAnalysis,
+  analysis: initial,
   selected: null,
   verdicts: load<Record<string, Verdict>>(`${BASE_KEY}:verdicts`, {}),
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),

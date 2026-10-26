@@ -58,6 +58,19 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .branches { display: flex; align-items: center; gap: 6px; color: var(--muted); }
 .pill { font: 13px var(--mono); padding: 3px 8px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
 .pill-head { color: var(--accent); border-color: rgba(245, 185, 66, 0.4); }
+button.pill-head { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button.pill-head:hover { background: var(--panel-2); }
+.caret { font-size: 10px; opacity: 0.8; }
+.branch-picker { position: relative; }
+.branch-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; min-width: 320px; list-style: none; margin: 0; padding: 6px;
+  background: rgba(13, 20, 40, 0.96); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.branch-menu a { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; color: var(--text); text-decoration: none; }
+.branch-menu a:hover { background: var(--panel); }
+.branch-menu a.is-current { box-shadow: inset 2px 0 0 var(--accent); }
+.branch-menu .mono { font: 13px var(--mono); color: var(--accent); }
+.branch-title { font-size: 14px; color: #cfd7ea; }
 
 .btn {
   border: 1px solid var(--line-2); background: var(--panel); border-radius: 8px;

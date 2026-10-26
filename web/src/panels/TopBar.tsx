@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+import { cases } from "../mock";
 import { layerOf, useReview, useVisible, type Layer } from "../store";
 
 export function TopBar() {
@@ -15,7 +17,7 @@ export function TopBar() {
       <span className="branches">
         <span className="pill">{analysis.base}</span>
         <span className="arrow">←</span>
-        <span className="pill pill-head">{analysis.head}</span>
+        <BranchPicker head={analysis.head} />
       </span>
 
       <div className="layers">
@@ -47,5 +49,36 @@ export function TopBar() {
         ☰ Índice
       </button>
     </header>
+  );
+}
+
+/** Cambiar de rama recarga con el caso nuevo: cada una tiene su mapa y sus veredictos */
+function BranchPicker({ head }: { head: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+  return (
+    <span className="branch-picker" ref={ref}>
+      <button className="pill pill-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {head} <span className="caret">▾</span>
+      </button>
+      {open && (
+        <ul className="branch-menu">
+          {cases.map((c) => (
+            <li key={c.head}>
+              <a className={c.head === head ? "is-current" : ""} href={`?caso=${encodeURIComponent(c.head)}`}>
+                <span className="mono">{c.head}</span>
+                <span className="branch-title">{c.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </span>
   );
 }
