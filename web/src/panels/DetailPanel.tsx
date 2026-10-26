@@ -265,13 +265,23 @@ function Closing({ id, question }: { id: string; question: string }) {
 /** Moverse por el recorrido. También con las flechas del teclado */
 function Stepper({ id }: { id: string }) {
   const { verdicts, tourStep } = useReview();
-  const tour = useVisible().tour;
+  const a = useVisible();
+  const tour = a.tour;
   const pos = tour.indexOf(id);
   const last = pos === tour.length - 1;
+  const groupId = a.blocks.find((b) => b.id === (a.decisions.find((d) => d.id === id)?.from ?? id))?.group;
+  const gi = a.groups.findIndex((g) => g.id === groupId);
   return (
     <nav className="stepper">
+      <p className="stepper-where">
+        {gi !== -1 && <span className="group-n">{gi + 1}</span>}
+        {gi !== -1 && <strong>{a.groups[gi].title}</strong>}
+        <span className="stepper-pos">
+          paso {pos + 1} de {tour.length}
+        </span>
+      </p>
       {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
-      <div className="steps" aria-label={`Paso ${pos + 1} de ${tour.length}`}>
+      <div className="steps">
         {tour.map((t, i) => (
           <span key={t} className={`step-seg ${verdicts[t] ? `is-${verdicts[t]}` : ""} ${i === pos ? "is-current" : ""}`} />
         ))}

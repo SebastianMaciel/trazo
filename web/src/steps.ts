@@ -1,25 +1,24 @@
 import type { Analysis } from "../../src/shared/analysis";
 
 export interface Steps {
-  /** Número de cada bloque: 1, 2, 3, 4, 5a, 5b… */
+  /** Número de cada paso: 1, 2, 3… corrido en todo el recorrido */
   labels: Record<string, string>;
   /** Orden del recorrido que coincide con los números */
   order: string[];
 }
 
-/**
- * Numeración: el flujo pone la regla dura y la AI decide el resto.
- * Nivel = camino más largo desde un bloque sin entradas, así nada aparece antes de lo
- * que le pasa datos. Los del mismo nivel van en paralelo y llevan letra; entre ellos
- * manda el orden del recorrido de la AI (por ejemplo, lo más riesgoso primero).
- * Los bloques sin flujo (tests, textos) van al final en el orden de la AI.
- */
 /** El recorrido de la AI con cada rombo justo después del bloque del que sale */
 export function baseTour(a: Analysis): string[] {
   // Sin repetir: el recorrido que llega puede traer los rombos ya incluidos
   return [...new Set(a.tour.flatMap((id) => [id, ...a.decisions.filter((d) => d.from === id).map((d) => d.id)]))];
 }
 
+/**
+ * Numeración: un solo número corrido, y el recorrido va grupo por grupo en el orden de los grupos.
+ * Adentro de cada grupo, nivel = camino más largo desde un paso sin entradas, así nada aparece
+ * antes de lo que le pasa datos; entre los del mismo nivel manda el orden de la AI.
+ * Los pasos sin flujo (tests, textos) van al final de su grupo.
+ */
 export function computeSteps(a: Analysis): Steps {
   // Un rombo es un paso más: bloque → rombo → lo que sigue por cada salida
   const flow = [
@@ -40,26 +39,17 @@ export function computeSteps(a: Analysis): Steps {
     return level[id];
   };
 
-  const byLevel = new Map<number, string[]>();
-  for (const id of tour.filter((id) => inFlow.has(id))) {
-    const l = visit(id);
-    byLevel.set(l, [...(byLevel.get(l) ?? []), id]);
-  }
-
-  const labels: Record<string, string> = {};
-  const order: string[] = [];
-  let n = 0;
-  for (const l of [...byLevel.keys()].sort((p, q) => p - q)) {
-    n = l;
-    const ids = byLevel.get(l)!; // ya vienen en el orden de la AI
-    ids.forEach((id, i) => {
-      labels[id] = ids.length > 1 ? `${l}${String.fromCharCode(97 + i)}` : `${l}`;
-      order.push(id);
-    });
-  }
-  for (const id of tour.filter((id) => !inFlow.has(id))) {
-    labels[id] = `${++n}`;
-    order.push(id);
-  }
+  // Un rombo es del grupo del bloque del que sale
+  const groupOf = (id: string) => a.blocks.find((b) => b.id === (a.decisions.find((d) => d.id === id)?.from ?? id))?.group;
+  const groupRank = (id: string) => {
+    const i = a.groups.findIndex((g) => g.id === groupOf(id));
+    return i === -1 ? a.groups.length : i;
+  };
+  const key = (id: string) => [groupRank(id), inFlow.has(id) ? visit(id) : Infinity, tour.indexOf(id)];
+  const order = [...tour].sort((p, q) => {
+    const [x, y] = [key(p), key(q)];
+    return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+  });
+  const labels = Object.fromEntries(order.map((id, i) => [id, `${i + 1}`]));
   return { labels, order };
 }

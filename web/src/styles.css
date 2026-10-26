@@ -402,14 +402,15 @@ button.pill-head:hover { background: var(--panel-2); }
   border: 1px solid currentColor; border-radius: calc(var(--radius-sm) - 3px); opacity: 0.7; margin: 0 2px;
 }
 .steps { display: flex; gap: 5px; margin-bottom: 16px; }
+.stepper-where { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 13px var(--mono); color: var(--muted); }
+.stepper-where strong { color: var(--text); font-weight: 600; }
+.stepper-where .stepper-pos { margin-left: auto; white-space: nowrap; }
 .step-seg { flex: 1; height: 6px; border-radius: 999px; background: var(--line-2); transition: background 0.25s, height 0.2s; }
 .step-seg.is-ok { background: var(--add); }
 .step-seg.is-doubt { background: var(--accent); }
 .step-seg.is-current { height: 6px; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text); }
 .stepper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stepper-btns .btn { min-height: 46px; font-size: 15px; }
-.step.is-branch { width: auto; min-width: 26px; padding: 0 7px; border-radius: 999px; }
-.block.is-far .step.is-branch { min-width: 64px; padding: 0 14px; border-radius: 999px; }
 
 /* ---------- decisiones ---------- */
 .decision { position: relative; display: grid; place-items: center; cursor: pointer; transition: opacity 0.3s, filter 0.3s; }
@@ -488,6 +489,7 @@ button.pill-head:hover { background: var(--panel-2); }
 @keyframes start-glow { 50% { filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 70%, transparent)); } }
 .decision.is-far .step { width: 64px; height: 64px; font-size: 30px; border-width: 3px; }
 .tree-diamond { color: color-mix(in srgb, var(--decision) 60%, var(--decision-text)); font-size: 13px; }
+.tree-step { min-width: 18px; font: 12px var(--mono); color: var(--muted); text-align: right; }
 .tree-item.is-decision .tree-name { font-family: var(--sans); font-size: 13px; color: color-mix(in srgb, var(--decision) 23%, var(--decision-text)); }
 
 /* Número de grupo: une la lista del panel con el mapa visto de lejos */

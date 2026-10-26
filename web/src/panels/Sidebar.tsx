@@ -36,6 +36,7 @@ export function Sidebar() {
                   <li key={it.id}>
                     <button className={`tree-item ${it.decision ? "is-decision" : ""} ${selected === it.id ? "is-selected" : ""}`} onClick={() => select(it.id)}>
                       <span className={`tree-check ${verdicts[it.id] ? `is-${verdicts[it.id]}` : ""}`}>{verdicts[it.id] ? VERDICT_MARK[verdicts[it.id]] : ""}</span>
+                      <span className="tree-step">{analysis.tour.indexOf(it.id) + 1}</span>
                       {it.decision && <span className="tree-diamond">◇</span>}
                       <span className="tree-name">{it.title}</span>
                       {it.warn ? <span className="warn-dot">!</span> : null}

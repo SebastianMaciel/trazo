@@ -38,7 +38,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   return (
     <div className={cls}>
       {start && <span className="start-tag">{start}</span>}
-      {step && <span className={`step ${step.length > 1 && /[a-z]$/.test(step) ? "is-branch" : ""}`}>{step}</span>}
+      {step && <span className="step">{step}</span>}
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />
 
