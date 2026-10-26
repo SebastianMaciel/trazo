@@ -1,7 +1,7 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Analysis } from "../../../src/shared/analysis";
 import type { Graph } from "../graph";
-import { groupLinks, overviewCols } from "../overview";
+import { overviewCols } from "../overview";
 import { stepOf } from "../review";
 import { useReview } from "../store";
 import { freeArea, useFrame } from "./camera";
@@ -27,14 +27,13 @@ function swallowGesture() {
 }
 
 /**
- * El esquema: una card por grupo, en el orden del recorrido, y de qué grupos recibe datos y a cuáles se los pasa.
- * Escrito y no con flechas: en una grilla, las flechas entre cards que no están al lado se cruzan.
+ * El esquema: una card por grupo, en el orden del recorrido, con su progreso y sus avisos.
+ * El flujo entre grupos no va acá: con grupos por comportamiento va y vuelve, y se lee en el mapa.
  * Es lo primero que ves y se vuelve con "Vista general". Tocar una card acerca la cámara a ese grupo
  */
 export function Overview({ analysis: a, graph, next }: { analysis: Analysis; graph: Graph; next?: string }) {
   const { verdicts, select, setOverview } = useReview();
   const frame = useFrame();
-  const links = useMemo(() => groupLinks(graph), [graph]);
   const box = useRef<HTMLDivElement>(null);
   const cards = useRef<Record<string, HTMLDivElement | null>>({});
   const [rects, setRects] = useState<Record<string, Rect>>({});
@@ -57,7 +56,7 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
     ro.observe(document.querySelector(".canvas")!);
     if (box.current) ro.observe(box.current);
     return () => ro.disconnect();
-  }, [a, links]);
+  }, [a]);
 
   /** Entrar a un grupo. Si entero no entra a un zoom que se lea, te deja donde seguir adentro del grupo */
   const enter = (groupId: string) => {
@@ -106,30 +105,6 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  /** De qué grupos recibe o a cuáles le pasa datos. Tocar uno te lleva */
-  const Flow = ({ label, ids }: { label: string; ids: string[] }) =>
-    ids.length ? (
-      <div className="ov-flow">
-        <span className="ov-flow-label">{label}</span>
-        {ids.map((id) => {
-          const i = a.groups.findIndex((x) => x.id === id);
-          return (
-            <button
-              key={id}
-              className="ov-flow-item"
-              onClick={(e) => {
-                e.stopPropagation();
-                enter(id);
-              }}
-            >
-              <span className="group-n">{i + 1}</span>
-              <span>{a.groups[i]?.title}</span>
-            </button>
-          );
-        })}
-      </div>
-    ) : null;
-
   const groupOfStep = (id: string) => graph.nodes.find((n) => n.id === id)?.group;
   const cols = overviewCols(a.groups.length);
   const style = { left: area.x, width: area.w, "--cols": cols } as CSSProperties;
@@ -160,8 +135,6 @@ export function Overview({ analysis: a, graph, next }: { analysis: Analysis; gra
                 {done} de {ids.length} revisados
                 {here && <span className="ov-here">{done ? "Seguí acá" : "Empezá acá"}</span>}
               </p>
-              <Flow label="Recibe de" ids={links.filter((l) => l.to === g.id).map((l) => l.from)} />
-              <Flow label="Le pasa a" ids={links.filter((l) => l.from === g.id).map((l) => l.to)} />
               {warned.length > 0 && (
                 <ul className="ov-warns">
                   {warned.map((s) => (

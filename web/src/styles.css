@@ -194,11 +194,6 @@ button.pill-head:hover { background: var(--panel-2); }
 .ov-summary { margin: 0; font-size: 14px; line-height: 1.45; color: var(--muted); }
 .ov-meta { margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font: 13px var(--mono); color: var(--muted); }
 .ov-here { padding: 2px 8px; border-radius: var(--radius); background: var(--accent); color: var(--bg); font: 600 12px var(--sans); }
-.ov-flow { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
-.ov-flow-label { font: 12px var(--mono); color: var(--muted); margin-bottom: 2px; }
-.ov-flow-item { all: unset; box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; padding: 5px 8px; margin: 0 -8px; border-radius: var(--radius); font-size: 14px; line-height: 1.3; color: var(--text-2); cursor: pointer; }
-.ov-flow-item:hover { background: var(--panel-2); color: var(--text); }
-.ov-flow-item .group-n { font-size: 11px; width: 20px; height: 20px; }
 .ov-warns { list-style: none; margin: 2px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
 .ov-warn { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--radius); font: 13px/1.35 var(--mono); color: var(--text); cursor: pointer; }
 .ov-warn .warn-dot { margin-top: 1px; }
