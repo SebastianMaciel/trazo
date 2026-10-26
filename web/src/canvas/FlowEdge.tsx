@@ -24,6 +24,13 @@ function roundedPath(pts: Point[], radius = 14): string {
   return d + ` L ${last.x} ${last.y}`;
 }
 
+/** Los datos viajan siempre a la misma velocidad y con la misma separación, mida lo que mida la flecha */
+const PARTICLE_SPEED = 200; // unidades del canvas por segundo
+const PARTICLE_GAP = 140;
+const MAX_PARTICLES = 32;
+
+const pathLength = (pts: Point[]) => pts.slice(1).reduce((sum, b, i) => sum + Math.hypot(b.x - pts[i].x, b.y - pts[i].y), 0);
+
 /**
  * La etiqueta va en el medio del tramo horizontal más largo: los verticales suelen correr
  * pegados a una card y la etiqueta la taparía. Si no hay horizontales, el más largo.
@@ -62,17 +69,21 @@ export function FlowEdge(props: EdgeProps<Edge<FlowEdgeData>>) {
   const oy = start.y + ((second.y - start.y) / len) * along;
   // En las de test el layout va código → test, así que las partículas corren al revés
   const reverse = !!e.reversed;
+  const length = data!.points && data!.points.length >= 2 ? pathLength(data!.points) : Math.hypot(targetX - sourceX, targetY - sourceY) * 1.2;
+  const dur = Math.max(0.4, length / PARTICLE_SPEED);
+  const count = Math.min(MAX_PARTICLES, Math.max(1, Math.round(length / PARTICLE_GAP)));
+  const begins = Array.from({ length: count }, (_, i) => +((i * dur) / count).toFixed(3));
 
   return (
     <>
       <BaseEdge path={path} className={cls} markerEnd={markerEnd} markerStart={markerStart} />
       {data!.active &&
-        [0, 0.6, 1.2].map((begin) => (
+        begins.map((begin) => (
           // Escondida hasta que arranca: si no, espera parada en el origen del mapa
           <circle key={begin} r={3.2} className="particle" visibility="hidden">
             <set attributeName="visibility" to="visible" begin={`${begin}s`} />
             <animateMotion
-              dur="1.8s"
+              dur={`${dur}s`}
               begin={`${begin}s`}
               repeatCount="indefinite"
               path={path}
