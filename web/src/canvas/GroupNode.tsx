@@ -11,7 +11,9 @@ export function GroupNode({ data, width = 0 }: NodeProps<Node<GroupNodeData>>) {
   const far = zoom < FAR_ZOOM;
   const intent = zoom < INTENT_ZOOM;
   // El título mantiene un tamaño legible en pantalla aunque te alejes
-  const size = Math.min(64, Math.max(20, 20 / zoom));
+  // y nunca más ancho que el grupo: número, título y progreso tienen que entrar en su caja
+  const fit = (width - 68) / (group.title.length * 0.56 + 5);
+  const size = Math.min(64, Math.max(20, 20 / zoom), fit);
 
   return (
     <div className={`group risk-${group.risk} ${group.minor ? "is-minor" : ""} ${dimmed ? "is-dimmed" : ""} ${far ? "is-far" : ""} ${intent ? "is-intent" : ""}`}>

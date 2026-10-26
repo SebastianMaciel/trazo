@@ -2,7 +2,7 @@ import { Handle, Position, useStore, type NodeProps, type Node } from "@xyflow/r
 import type { Block, RowChange } from "../../../src/shared/analysis";
 import type { Verdict } from "../store";
 
-import { FAR_ZOOM } from "../layout";
+import { FAR_ZOOM, headerHeight, rowHeight } from "../layout";
 
 export type BlockNodeData = {
   block: Block;
@@ -42,7 +42,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       <Handle type="target" position={Position.Left} id="card:in" className="h h-card" />
       <Handle type="source" position={Position.Right} id="card:out" className="h h-card" />
 
-      <header className="block-head">
+      <header className="block-head" style={{ height: headerHeight(block) }}>
         <div className="block-title-row">
           <span className="block-title">{block.title}</span>
           <VerdictBadge verdict={verdict} />
@@ -56,7 +56,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
       {/* Las filas se renderizan siempre: de sus handles salen las flechas */}
       <ul className="rows">
         {block.rows.map((r) => (
-          <li key={r.id} className={`row row-${r.change}`}>
+          <li key={r.id} className={`row row-${r.change}`} style={{ height: rowHeight(r) }}>
             <Handle type="target" position={Position.Left} id={`${r.id}:in`} className="h" />
             <span className="row-mark">{CHANGE_MARK[r.change]}</span>
             <span className="row-text">
