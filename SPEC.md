@@ -91,6 +91,7 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 
 - `groups[]`: id, título de intención y resumen de una línea.
 - `blocks[]`: id, group, título, explicación corta, `hunks[]` (archivo + rango de líneas del diff) y nivel de riesgo (bajo/medio/alto).
+- `hunks[].notes[]`: notas que explican grupos de líneas seguidas (rango + texto de una o dos frases). Dicen el efecto, no repiten el código, y marcan el riesgo si lo hay. Se muestran al lado del código: nadie lee código pelado.
 - `edges[]`: from, to, tipo (`llama`, `importa`, `usa-tipo`, `flujo-de-datos`) y **evidencia** (archivo:línea).
 - `decisions[]`: los puntos donde el flujo se divide (un `if` que decide a dónde va el dato). Cada uno lleva condición, estado (`nueva` / `cambió` / `igual`), salidas (a otro bloque o a un final, como "responde 400"), casos de ejemplo con el camino que toma cada uno y evidencia (archivo:línea del `if`).
 - `tour[]`: orden sugerido de bloques. Se respeta dentro de cada nivel del flujo: nada aparece antes de lo que le pasa datos.

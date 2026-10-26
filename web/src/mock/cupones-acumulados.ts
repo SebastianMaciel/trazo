@@ -55,12 +55,15 @@ export const cuponesAnalysis: Analysis = {
      return fail(400, COPY.errors.invalidAmount);
    }
 
+#> Si llegan dos o más cupones, aunque sea el mismo repetido, corta con 422.
 +  const codes = req.couponCodes ?? [];
 +  if (codes.length > MAX_COUPONS_PER_ORDER) {
 +    return fail(422, COPY.errors.tooManyCoupons);
 +  }
 +
+#.
    const totals = cartTotals(items);
+#> Antes sumaba todos e ignoraba en silencio los que no existían. Ahora busca el único y si no existe, 422.
 -  const coupons = (req.couponCodes ?? [])
 -    .map((code) => findCoupon(code))
 -    .filter((c): c is Coupon => c !== null);
@@ -71,6 +74,7 @@ export const cuponesAnalysis: Analysis = {
 +    if (!coupon) {
 +      return fail(422, COPY.errors.couponNotFound);
 +    }
+#> Valida vencimiento y mínimo. Ojo: el mínimo se mide sin IVA y el cupón no vale su último día.
 +    if (!isCouponActive(coupon, now)) {
 +      return fail(422, COPY.errors.couponExpired);
 +    }
@@ -78,12 +82,16 @@ export const cuponesAnalysis: Analysis = {
 +      return fail(422, COPY.errors.couponMinimum(formatARS(coupon.minSubtotal)));
 +    }
 +  }
+#> Precio con un cupón o ninguno, descontando sobre el neto.
 +  const pricing = priceWithCoupon(totals.subtotal, coupon);
+#.
 
    let quote;
    try {
+#> Las cuotas ahora reciben el ahorro con IVA para repartirlo.
 -    quote = quoteInstallments(pricing.total, req.installments);
 +    quote = quoteInstallments(pricing.total, req.installments, pricing.discountWithIva);
+#.
    } catch {
      return fail(422, COPY.errors.planUnavailable);
    }`),
@@ -116,6 +124,7 @@ export const cuponesAnalysis: Analysis = {
 +import { formatARS } from "../money";
 +import { netFromGross } from "../tax";
 +
+#> Recibe el código y el subtotal con IVA. Devuelve ahorro y total listos para mostrar, o el error.
 +export interface ValidateCouponRequest {
 +  code: string;
 +  /** Subtotal del carrito en centavos, con IVA (lo que ve el cliente) */
@@ -126,18 +135,21 @@ export const cuponesAnalysis: Analysis = {
 +  | { status: 200; body: { ok: true; code: string; discount: string; total: string } }
 +  | { status: 404 | 422; body: { ok: false; error: string } };
 +
+#> Busca el cupón y si no existe responde 404. Ojo: el checkout responde 422 para el mismo caso.
 +/** POST /api/coupons/validate: el front lo llama cuando el cliente carga el cupón. */
 +export function handleValidateCoupon(req: ValidateCouponRequest, now: Date = new Date()): ValidateCouponResponse {
 +  const coupon = findCoupon(req.code);
 +  if (!coupon) {
 +    return { status: 404, body: { ok: false, error: COPY.errors.couponNotFound } };
 +  }
+#> Vencido o bajo el mínimo responde 422. No mira si ya hay otro cupón: eso lo frena recién el checkout.
 +  if (!isCouponActive(coupon, now)) {
 +    return { status: 422, body: { ok: false, error: COPY.errors.couponExpired } };
 +  }
 +  if (!meetsMinimum(coupon, netFromGross(req.subtotal))) {
 +    return { status: 422, body: { ok: false, error: COPY.errors.couponMinimum(formatARS(coupon.minSubtotal)) } };
 +  }
+#> Si pasa todo, calcula el precio y le dice al cliente cuánto se ahorra y cuánto paga.
 +
 +  const pricing = priceWithCoupon(req.subtotal, coupon);
 +  return {
@@ -165,18 +177,24 @@ export const cuponesAnalysis: Analysis = {
 
  /** Tabla coupons. En memoria para la demo. */
  const rows = [
+#> Los cupones guardan compra mínima y vencimiento. BIENVENIDA15 vence el 30/11.
 -  { code: "VERANO10", percent: 10 },
 -  { code: "BIENVENIDA15", percent: 15 },
 +  { code: "VERANO10", percent: 10, min_subtotal_cents: 2000000, expires_on: "2026-12-31" },
 +  { code: "BIENVENIDA15", percent: 15, min_subtotal_cents: 0, expires_on: "2026-11-30" },
+#.
  ];
 
  export function findCoupon(code: string): Coupon | null {
+#> Normaliza el código: " verano10 " ahora encuentra VERANO10.
 -  const row = rows.find((r) => r.code === code);
 +  const row = rows.find((r) => r.code === code.trim().toUpperCase());
+#.
    if (!row) return null;
+#> Devuelve también mínimo y vencimiento, que necesitan las validaciones.
 -  return { code: row.code, percent: row.percent };
 +  return { code: row.code, percent: row.percent, minSubtotal: row.min_subtotal_cents, expiresOn: row.expires_on };
+#.
  }
 
  /** Para el panel de admin: todos los códigos cargados. */`),
@@ -200,11 +218,13 @@ export const cuponesAnalysis: Analysis = {
       ],
       hunks: [
         hunk("src/coupons.ts", "", 5, 6, `
+#> Toma la fecha de hoy en hora argentina, así el vencimiento no depende del huso del servidor.
 +/** Fecha de hoy en Argentina, "AAAA-MM-DD". */
 +function localDay(now: Date): string {
 +  return now.toLocaleDateString("sv-SE", { timeZone: TIMEZONE });
 +}
 +
+#> Ojo: con < el cupón deja de valer el mismo día que vence, aunque el comentario diga que ese día vale.
 +/** \`expiresOn\` es el último día en que el cupón vale. */
 +export function isCouponActive(coupon: Coupon, now: Date): boolean {
 +  return localDay(now) < coupon.expiresOn;
@@ -224,6 +244,7 @@ export const cuponesAnalysis: Analysis = {
       rows: [{ id: "r-m-cmp", change: "added", label: "subtotal sin IVA ≥ mínimo" }],
       hunks: [
         hunk("src/coupons.ts", "", 5, 16, `
+#> Compara contra el subtotal sin IVA. Ojo: un carrito de $ 20.000 con IVA no llega a un mínimo de $ 20.000.
 +/** El mínimo se compara contra el subtotal sin IVA. */
 +export function meetsMinimum(coupon: Coupon, subtotal: Cents): boolean {
 +  return subtotal >= coupon.minSubtotal;
@@ -249,10 +270,12 @@ export const cuponesAnalysis: Analysis = {
  }
 
  export interface CartTotals {
+#> Los totales del carrito quedan en el subtotal con IVA. Descuento y total pasan a ser cosa del cupón.
 +  /** Suma de precios de catálogo, con IVA incluido */
    subtotal: Cents;
 -  discount: Cents;
 -  total: Cents;
+#.
  }
 
  export function lineTotal(item: CartItem): Cents {`),
@@ -260,12 +283,14 @@ export const cuponesAnalysis: Analysis = {
    return toCents(item.unitPrice + 0.001) * item.quantity;
  }
 
+#> Antes el carrito descontaba un porcentaje sobre el precio con IVA. Ahora solo suma precios.
 -export function cartTotals(items: CartItem[], discountPercent = 0): CartTotals {
 -  const subtotal = addCents(...items.map(lineTotal));
 -  const discount = percentOf(subtotal, discountPercent);
 -  return { subtotal, discount, total: subtotal - discount };
 +export function cartTotals(items: CartItem[]): CartTotals {
 +  return { subtotal: addCents(...items.map(lineTotal)) };
+#.
  }`),
       ],
     },
@@ -298,12 +323,14 @@ export const cuponesAnalysis: Analysis = {
       ],
       hunks: [
         hunk("src/coupons.ts", "export function priceWithCoupon(gross: Cents, coupon: Coupon | null): Pricing", 5, 21, `
+#> El comentario pasa a la regla nueva: descuento sobre el neto, IVA al final.
  /**
 - * Aplica los cupones al subtotal del carrito.
 - * \`gross\` viene con IVA incluido (precios de catálogo).
 + * Precio final con un cupón como máximo.
 + * El descuento sale del subtotal sin IVA y el IVA se calcula sobre lo que queda.
   */
+#> Antes sumaba el porcentaje de todos los cupones. Ahora acepta uno o ninguno; sin cupón, precio de lista.
 -export function priceWithCoupons(gross: Cents, coupons: Coupon[]): Pricing {
 -  let discount = 0;
 -  for (const coupon of coupons) {
@@ -313,10 +340,12 @@ export const cuponesAnalysis: Analysis = {
 +  if (!coupon) {
 +    return { subtotal, discount: 0, discountWithIva: 0, net: subtotal, iva: gross - subtotal, total: gross, couponCode: null };
    }
+#> Antes el % salía del precio con IVA y se restaba del neto (12,1% real). Ahora sale del neto.
 -  const net = netFromGross(gross) - discount;
 +  const discount = percentOf(subtotal, coupon.percent);
 +  const net = subtotal - discount;
    const total = addIva(net);
+#> Guarda el ahorro con IVA, que es lo que ve el cliente, y un solo código de cupón.
    return {
 -    subtotal: gross,
 +    subtotal,
@@ -328,6 +357,7 @@ export const cuponesAnalysis: Analysis = {
 -    couponCodes: coupons.map((c) => c.code),
 +    couponCode: coupon.code,
    };
+#.
  }`),
       ],
       example: { input: "$ 121.000 con VERANO10", before: "cobra $ 106.359,00", after: "cobra $ 108.900,00", executed: true },
@@ -351,17 +381,21 @@ export const cuponesAnalysis: Analysis = {
    total: Cents;
    perInstallment: Cents;
    lastInstallment: Cents;
+#> La cotización suma el ahorro por cuota y el de la última, que se lleva el resto.
 +  /** Parte del descuento del cupón que le toca a cada cuota */
 +  discountPerInstallment: Cents;
 +  lastDiscount: Cents;
+#.
  }
 
  export function isValidInstallmentCount(count: number): boolean {
    return Number.isInteger(count) && count >= 1 && count <= MAX_INSTALLMENTS;
  }
 
+#> Recibe el ahorro del cupón. Por defecto 0, así las llamadas sin cupón siguen igual.
 -export function quoteInstallments(amount: Cents, count: number): InstallmentQuote {
 +export function quoteInstallments(amount: Cents, count: number, discount: Cents = 0): InstallmentQuote {
+#.
    const plan = INSTALLMENT_PLANS.find((p) => p.count === count);
    if (!plan) {
      throw new Error(\`No hay plan de \${count} cuotas\`);`),
@@ -369,8 +403,10 @@ export const cuponesAnalysis: Analysis = {
    const total = amount + surcharge;
    const perInstallment = Math.floor(total / count);
    const lastInstallment = total - perInstallment * (count - 1);
+#> Reparte el ahorro en partes iguales y el centavo que sobra va a la última cuota.
 +  const discountPerInstallment = Math.floor(discount / count);
 +  const lastDiscount = discount - discountPerInstallment * (count - 1);
+#.
 
    return {
      count,`),
@@ -396,7 +432,9 @@ export const cuponesAnalysis: Analysis = {
    issuedAt: string;
    customerEmail: string;
    lines: InvoiceLine[];
+#> La factura guarda el cupón aplicado y cuánto se ahorró, o null si no hubo.
 +  coupon: { code: string; amount: Cents } | null;
+#.
    net: Cents;
    tax: Cents;
    total: Cents;`),
@@ -404,17 +442,20 @@ export const cuponesAnalysis: Analysis = {
    quote?: InstallmentQuote;
  }
 
+#> Se borra la copia local de netFromGross, que truncaba. Ahora usa la de tax.ts, que redondea.
 -/** Precio final con IVA incluido -> neto gravado. */
 -export function netFromGross(gross: Cents): Cents {
 -  return toCents(fromCents(gross) / (1 + IVA_RATE));
 -}
 -
+#.
  export function buildInvoice(input: InvoiceInput): Invoice {
    const lines: InvoiceLine[] = input.items.map((item) => ({
      description: \`\${item.quantity} x \${item.name}\`,
      amount: lineTotal(item),
    }));
 
+#> Agrega un renglón negativo con el cupón para que las líneas sumen el total. Las facturas viejas no lo tienen.
 -  let total = input.pricing.total;
 +  const { pricing } = input;
 +  const coupon = pricing.couponCode ? { code: pricing.couponCode, amount: pricing.discountWithIva } : null;
@@ -423,6 +464,7 @@ export const cuponesAnalysis: Analysis = {
 +  }
 +
 +  let total = pricing.total;
+#.
    if (input.quote && input.quote.surcharge > 0) {
      lines.push({
        description: \`\${COPY.invoice.surcharge} (\${input.quote.count} cuotas)\`,`),
@@ -459,18 +501,22 @@ export const cuponesAnalysis: Analysis = {
  }
 
  export function renderReceipt(invoice: Invoice, quote: InstallmentQuote): ReceiptEmail {
+#> Arma la línea del cupón y la del ahorro por cuota, solo si hubo descuento.
 +  const coupon = invoice.coupon
 +    ? [\`\${COPY.receipt.coupon} \${invoice.coupon.code}: -\${formatARS(invoice.coupon.amount)}\`]
 +    : [];
 +  const saved =
 +    quote.discountPerInstallment > 0 ? [COPY.receipt.savedPerInstallment(formatARS(quote.discountPerInstallment))] : [];
+#.
    const lines = [
      COPY.receipt.thanks,
      "",
+#> Suma el cupón y el ahorro por cuota al mail. Ojo: la última cuota ahorra un centavo más y no se aclara.
 +    ...coupon,
      \`\${COPY.receipt.total}: \${formatARS(invoice.total)}\`,
      \`\${COPY.receipt.installments}: \${quote.count} x \${formatARS(quote.perInstallment)}\`,
 +    ...saved,
+#.
      "",
      \`\${SHOP.name} | \${SHOP.email}\`,
    ];`),
@@ -495,13 +541,16 @@ export const cuponesAnalysis: Analysis = {
       ],
       hunks: [
         hunk("db/migrations/002_coupons_vigencia.sql", "", 0, 1, `
+#> Columnas nuevas: compra mínima (0 si no tiene) y vencimiento.
 +-- Vigencia y compra mínima de cada cupón
 +ALTER TABLE coupons ADD COLUMN min_subtotal_cents INTEGER NOT NULL DEFAULT 0;
 +ALTER TABLE coupons ADD COLUMN expires_on DATE;
+#> Ojo: todo cupón sin vencimiento pasa a vencer el 31/12/2026, y la columna queda obligatoria.
 +
 +UPDATE coupons SET expires_on = '2026-12-31' WHERE expires_on IS NULL;
 +ALTER TABLE coupons ALTER COLUMN expires_on SET NOT NULL;
 +
+#> Un cupón por orden también en la base. Si ya hay órdenes con dos, el índice falla y la migración no corre.
 +-- Un solo cupón por orden
 +CREATE UNIQUE INDEX order_coupons_one_per_order ON order_coupons (order_id);`),
       ],
@@ -525,12 +574,15 @@ export const cuponesAnalysis: Analysis = {
    code: string;
    /** 10 = 10% */
    percent: number;
+#> El cupón suma la compra mínima sin IVA y el último día en que vale.
 +  /** Compra mínima, sin IVA, para que el cupón valga */
 +  minSubtotal: Cents;
 +  /** Último día en que vale, "AAAA-MM-DD" */
 +  expiresOn: string;
+#.
  }
 
+#> El precio aclara qué va sin IVA y suma el ahorro con IVA, el que se muestra en factura y mail.
 -/** Cómo queda el precio después de aplicar cupones. */
 +/** Cómo queda el precio después de aplicar el cupón. */
  export interface Pricing {
@@ -540,11 +592,14 @@ export const cuponesAnalysis: Analysis = {
    discount: Cents;
 +  /** Lo que se ahorra el cliente, con IVA */
 +  discountWithIva: Cents;
+#.
    net: Cents;
    iva: Cents;
    total: Cents;
+#> Antes guardaba una lista de códigos. Ahora uno solo, o null si no hubo cupón.
 -  couponCodes: string[];
 +  couponCode: string | null;
+#.
  }`),
       ],
     },
@@ -571,6 +626,7 @@ export const cuponesAnalysis: Analysis = {
 +
 +const verano: Coupon = { code: "VERANO10", percent: 10, minSubtotal: 2000000, expiresOn: "2026-12-31" };
 +
+#> Fija $ 121.000 con VERANO10 en $ 108.900 y que sin cupón se cobre el precio de lista.
 +describe("priceWithCoupon", () => {
 +  it("descuenta sobre el subtotal sin IVA", () => {
 +    const p = priceWithCoupon(12100000, verano);
@@ -585,6 +641,7 @@ export const cuponesAnalysis: Analysis = {
 +  });
 +});
 +
+#> Prueba un día antes y uno después del vencimiento. Ojo: no prueba el día exacto, por eso no salta el <.
 +describe("isCouponActive", () => {
 +  it("vale antes del vencimiento", () => {
 +    expect(isCouponActive(verano, new Date("2026-12-15T12:00:00-03:00"))).toBe(true);
@@ -595,6 +652,7 @@ export const cuponesAnalysis: Analysis = {
 +  });
 +});
 +
+#> Prueba el borde del mínimo: $ 20.000 sin IVA pasa, un centavo menos no.
 +describe("meetsMinimum", () => {
 +  it("pide el mínimo sin IVA", () => {
 +    expect(meetsMinimum(verano, 2000000)).toBe(true);
@@ -626,6 +684,7 @@ export const cuponesAnalysis: Analysis = {
 +const items = [{ sku: "P1", name: "Parrilla portátil", unitPrice: 121000, quantity: 1 }];
 +const verano = { code: "VERANO10", percent: 10, minSubtotal: 0, expiresOn: "2026-12-31" };
 +
+#> Arma una factura con VERANO10 en 3 cuotas, como saldría en una compra real.
 +describe("buildInvoice con cupón", () => {
 +  const pricing = priceWithCoupon(12100000, verano);
 +  const quote = quoteInstallments(pricing.total, 3, pricing.discountWithIva);
@@ -638,16 +697,19 @@ export const cuponesAnalysis: Analysis = {
 +    quote,
 +  });
 +
+#> Chequea el renglón del cupón y que la factura impresa lo muestre.
 +  it("muestra la línea del cupón", () => {
 +    expect(inv.coupon).toEqual({ code: "VERANO10", amount: 1210000 });
 +    expect(renderInvoiceText(inv)).toContain("Cupón VERANO10");
 +  });
 +
+#> Chequea que los renglones sumen el total, lo que antes no pasaba con cupón.
 +  it("las líneas suman el total", () => {
 +    const sum = inv.lines.reduce((acc, l) => acc + l.amount, 0);
 +    expect(sum).toBe(inv.total);
 +  });
 +
+#> Chequea que el ahorro repartido en 3 cuotas no pierda ni sume centavos.
 +  it("reparte el ahorro en las cuotas", () => {
 +    expect(quote.discountPerInstallment * 2 + quote.lastDiscount).toBe(1210000);
 +  });
@@ -672,16 +734,20 @@ export const cuponesAnalysis: Analysis = {
      invalidAmount: "Hay un precio que no pudimos leer",
      invalidInstallments: "Cantidad de cuotas invalida",
      planUnavailable: "Ese plan de cuotas no esta disponible",
+#> Mensajes para los cuatro rechazos del cupón. El del mínimo aclara que es sin IVA.
 +    tooManyCoupons: "Solo se puede usar un cupón por compra",
 +    couponNotFound: "Ese cupón no existe",
 +    couponExpired: "Ese cupón ya venció",
 +    couponMinimum: (min: string) => \`El cupón vale para compras desde \${min} sin IVA\`,
+#.
    },
    invoice: {
      header: "Factura B",
      customer: "Cliente",
+#> En la factura el renglón pasa de "Descuento" a "Cupón".
 -    discount: "Descuento",
 +    coupon: "Cupón",
+#.
      surcharge: "Recargo por cuotas",
      net: "Neto gravado",
      tax: "IVA 21%",`),
@@ -689,9 +755,11 @@ export const cuponesAnalysis: Analysis = {
      subject: (number: string) => \`Tu compra \${number}\`,
      thanks: "Gracias por tu compra!",
      total: "Total",
+#> Textos del mail para el cupón y el ahorro por cuota.
 +    coupon: "Cupón",
      installments: "Cuotas",
 +    savedPerInstallment: (amount: string) => \`Ahorrás \${amount} en cada cuota\`,
+#.
    },
  } as const;`),
       ],
@@ -712,8 +780,10 @@ export const cuponesAnalysis: Analysis = {
         hunk("src/config.ts", "", 1, 1, `
  export const IVA_RATE = 0.21;
  export const MAX_INSTALLMENTS = 12;
+#> Tope de un cupón por compra y la zona horaria con la que se decide si un cupón venció.
 +export const MAX_COUPONS_PER_ORDER = 1;
 +export const TIMEZONE = "America/Argentina/Buenos_Aires";
+#.
 
  export const INSTALLMENT_PLANS = [
    { count: 1, surchargeRate: 0 },`),
@@ -766,6 +836,7 @@ export const cuponesAnalysis: Analysis = {
         { input: "sin cupón", outcome: "si", warning: "no busca nada y cobra el precio de lista" },
       ],
       hunk: hunk("src/api/checkout.ts", "export function handleCheckout(req: CheckoutRequest, now: Date = new Date()): CheckoutResponse", 63, 65, `
+#> Si llega más de un cupón, aunque sea el mismo repetido, corta con 422 antes de buscar nada.
 +  const codes = req.couponCodes ?? [];
 +  if (codes.length > MAX_COUPONS_PER_ORDER) {
 +    return fail(422, COPY.errors.tooManyCoupons);
@@ -789,6 +860,7 @@ export const cuponesAnalysis: Analysis = {
         { input: "BIENVENIDA15 el 30/11", outcome: "no", warning: "es su último día: debería valer" },
       ],
       hunk: hunk("src/api/checkout.ts", "export function handleCheckout(req: CheckoutRequest, now: Date = new Date()): CheckoutResponse", 68, 77, `
+#> Cupón vencido corta con 422. Ojo: con < deja de valer el mismo día que vence.
 +    if (!isCouponActive(coupon, now)) {
 +      return fail(422, COPY.errors.couponExpired);
 +    }`),
@@ -811,6 +883,7 @@ export const cuponesAnalysis: Analysis = {
         { input: "BIENVENIDA15 con $ 500", outcome: "si" },
       ],
       hunk: hunk("src/api/checkout.ts", "export function handleCheckout(req: CheckoutRequest, now: Date = new Date()): CheckoutResponse", 68, 80, `
+#> Bajo el mínimo corta con 422. Ojo: se mide sin IVA y el cliente ve precios con IVA.
 +    if (!meetsMinimum(coupon, netFromGross(totals.subtotal))) {
 +      return fail(422, COPY.errors.couponMinimum(formatARS(coupon.minSubtotal)));
 +    }`),

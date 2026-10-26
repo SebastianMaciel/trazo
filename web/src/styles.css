@@ -347,7 +347,7 @@ button.pill-head:hover { background: var(--panel-2); }
 .snippet:hover .snip-foot, .snippet.is-open .snip-foot { color: var(--accent); }
 
 /* ---------- panel de código completo, pegado al detalle ---------- */
-.codepanel { left: calc(14px + 430px + 10px); width: min(640px, calc(100% - 480px)); display: flex; flex-direction: column; overflow: hidden; animation: float-in-code 0.22s ease; }
+.codepanel { left: calc(14px + 430px + 10px); width: min(940px, calc(100% - 468px)); display: flex; flex-direction: column; overflow: hidden; animation: float-in-code 0.22s ease; }
 @keyframes float-in-code { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
 .codepanel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
 .codepanel-title { font-size: 16px; font-weight: 600; }
@@ -519,3 +519,14 @@ button.pill-head:hover { background: var(--panel-2); }
 .theme-text { display: grid; gap: 2px; }
 .theme-name { font-size: 20px; line-height: 1.1; color: var(--text); }
 .theme-note { font-size: 13px; color: var(--muted); }
+
+/* ---------- notas al lado del código ---------- */
+.code.with-notes .seg { display: grid; grid-template-columns: minmax(0, 1fr) 260px; }
+.code.with-notes .seg.has-note + .seg, .code.with-notes .seg + .seg.has-note { border-top: 1px solid var(--line); }
+.code.with-notes .line code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.seg-note { padding: 8px 12px 8px 14px; border-left: 1px solid var(--line); background: var(--bg-2); }
+.seg-note p { margin: 0; font: 13px/1.5 var(--sans); color: var(--text-2); position: sticky; top: 8px; }
+.seg-note p.is-warn { color: var(--del); }
+.seg.has-note:hover .seg-code { background: color-mix(in srgb, var(--text) 3%, transparent); }
+.seg.has-note:hover .seg-note p { color: var(--text); }
+.seg.has-note:hover .seg-note p.is-warn { color: var(--del); }

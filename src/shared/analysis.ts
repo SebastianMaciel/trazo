@@ -14,10 +14,19 @@ export interface Row {
   before?: string;
 }
 
+/** Explicación de una o varias líneas seguidas, para no tener que leer el código pelado */
+export interface LineNote {
+  /** Índices en hunk.lines, inclusive */
+  from: number;
+  to: number;
+  text: string;
+}
+
 export interface HunkView {
   file: string;
   section: string;
   lines: DiffLine[];
+  notes?: LineNote[];
 }
 
 export interface Example {
