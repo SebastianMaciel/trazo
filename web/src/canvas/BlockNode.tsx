@@ -2,7 +2,7 @@ import { Handle, Position, useStore, type NodeProps, type Node } from "@xyflow/r
 import type { Block, RowChange } from "../../../src/shared/analysis";
 import { VERDICT_MARK, type Verdict } from "../store";
 
-import { FAR_ZOOM, headerHeight, rowHeight } from "../layout";
+import { BLOCK_W, FAR_ZOOM, MIN_TEXT_PX, headerHeight, rowHeight } from "../layout";
 
 export type BlockNodeData = {
   block: Block;
@@ -32,8 +32,11 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   // Redondeado para no redibujar todas las cards en cada paso del pellizco
   const zoom = useStore((s) => Math.round(s.transform[2] * 40) / 40);
   const far = zoom < FAR_ZOOM;
-  // De lejos el título nunca baja de 12px en pantalla; si no entra en un renglón, se parte
-  const farSize = Math.min(56, Math.max(12 / Math.max(zoom, 0.05), Math.min(40, (verdict ? 440 : 520) / block.title.length)));
+  // De lejos el título apunta a 14px en pantalla, achicado para entrar en un renglón (la mono ocupa ~0.62em por letra)
+  // pero nunca debajo del mínimo legible: si ni así entra, se parte
+  const z = Math.max(zoom, 0.05);
+  const fit = (BLOCK_W - 60 - (verdict ? 56 : 0)) / (block.title.length * 0.62);
+  const farSize = Math.min(56, Math.max(MIN_TEXT_PX / z, Math.min(14 / z, fit)));
 
   const cls = ["block", far && "is-far", start && "is-start", selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
     .filter(Boolean)
@@ -74,10 +77,20 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
       {/* Siempre está, así el paso de cerca a lejos es un fundido y no un salto */}
       <div className="block-far" aria-hidden={!far}>
-        <span className="block-far-title" style={{ fontSize: farSize }}>
-          {block.title}
-        </span>
-        <VerdictBadge verdict={verdict} />
+        <div className="block-far-head" style={{ minHeight: headerHeight(block) }}>
+          <span className="block-far-title" style={{ fontSize: farSize }}>
+            {block.title}
+          </span>
+          <VerdictBadge verdict={verdict} />
+        </div>
+        {/* Cada fila como una línea que no se lee: avisa que acercándote hay más */}
+        <div className="block-far-rows">
+          {block.rows.map((r) => (
+            <span key={r.id} className={`ghost ghost-${r.change}`} style={{ flexGrow: rowHeight(r) }}>
+              <i style={{ width: `${Math.min(100, Math.max(30, (r.label.length / 36) * 100))}%` }} />
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

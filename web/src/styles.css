@@ -231,9 +231,18 @@ button.pill-head:hover { background: var(--panel-2); }
 .block { position: relative; }
 .block-far {
   position: absolute; inset: 0; border-radius: calc(var(--radius) - 1px); background: var(--panel);
-  display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px;
+  display: flex; flex-direction: column;
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
+.block-far-head { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 22px 16px 12px 44px; }
+.block-far-rows { flex: 1; display: flex; flex-direction: column; padding: 8px 0 12px; border-top: 1px solid var(--line); }
+.ghost { display: flex; align-items: center; gap: 14px; padding: 0 18px; min-height: 0; }
+.ghost::before { content: ""; width: 14px; height: 14px; border-radius: 50%; flex: none; background: var(--ghost); }
+.ghost i { display: block; height: 14px; border-radius: 999px; background: color-mix(in srgb, var(--ghost) 45%, transparent); }
+.ghost-added { --ghost: var(--add); }
+.ghost-modified { --ghost: var(--mod); }
+.ghost-deleted { --ghost: var(--del); }
+.ghost-affected { --ghost: var(--aff); }
 .block.is-far .block-far { opacity: 1; }
 .block.is-affected .block-far { background: var(--bg-2); }
 .block-far-title { font-family: var(--mono); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; text-align: center; overflow-wrap: anywhere; min-width: 0; }
