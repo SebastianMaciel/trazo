@@ -8,7 +8,7 @@ import "@fontsource/ibm-plex-mono/600.css";
 import "@fontsource/share-tech-mono";
 import "@xyflow/react/dist/base.css";
 import { api } from "./api";
-import { setLoaded } from "./mock";
+import { setLoaded } from "./source";
 import { applyTheme, savedTheme } from "./panels/ThemePicker";
 import "./styles.css";
 import "./themes.css";
@@ -16,25 +16,33 @@ import "./themes.css";
 applyTheme(savedTheme());
 const root = createRoot(document.getElementById("root")!);
 
-/**
- * Qué análisis abrir: ?a=clave trae uno guardado, ?caso= abre una demo,
- * y sin nada abre el último guardado (o la demo si todavía no hay ninguno)
- */
+/** Qué análisis abrir: ?a=clave trae uno guardado, y sin nada abre el último */
 async function boot() {
   const params = new URLSearchParams(location.search);
   let key = params.get("a");
-  if (!key && !params.has("caso")) {
-    const saved = await api.analyses().catch(() => []);
-    if (saved[0]) {
-      key = saved[0].key;
-      params.set("a", key);
-      history.replaceState(null, "", `?${params.toString()}`);
-    }
+  if (!key) {
+    const saved = await api.analyses();
+    if (!saved[0]) return root.render(<Empty />);
+    key = saved[0].key;
+    params.set("a", key);
+    history.replaceState(null, "", `?${params.toString()}`);
   }
-  if (key) setLoaded(await api.analysis(key));
+  setLoaded(await api.analysis(key));
   // Recién ahora: el store lee el análisis al cargarse
   const { App } = await import("./App");
   root.render(<App />);
+}
+
+/** Todavía no se analizó nada: cómo pedírselo a Claude */
+function Empty() {
+  return (
+    <main className="boot-error">
+      <h1>Todavía no hay ningún análisis</h1>
+      <p>Abrí Claude Code donde trabajás y pedile algo así:</p>
+      <p className="boot-cmd">con ~/code/trazo analizá el MR 123 de ~/code/mi-proyecto</p>
+      <p className="boot-hint">Claude sigue las instrucciones de trazo, arma el mapa, lo valida y lo abre acá.</p>
+    </main>
+  );
 }
 
 boot().catch((e: Error) =>

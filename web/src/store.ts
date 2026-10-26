@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Analysis, Block } from "../../src/shared/analysis";
-import { currentCase } from "./mock";
+import { currentAnalysis } from "./source";
 import { baseTour } from "./steps";
 
 export type Layer = "tests" | "minor";
@@ -42,7 +42,7 @@ interface ReviewState {
   tourStep: (dir: 1 | -1) => void;
 }
 
-const initial = currentCase();
+const initial = currentAnalysis();
 
 /** El paso en el que estás vive en la URL: recargar o compartir el link te deja en el mismo lugar */
 const SUMMARY = "resumen";

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type Saved } from "../api";
-import { cases, isDemo } from "../mock";
 import { ThemePicker } from "./ThemePicker";
 import { useReview, useVisible } from "../store";
 
@@ -100,17 +99,6 @@ function BranchPicker({ head }: { head: string }) {
               ))}
             </ul>
           )}
-          <p className="branch-section">Demos</p>
-          <ul>
-            {cases.map((c) => (
-              <li key={c.head}>
-                <a className={isDemo() && c.head === head ? "is-current" : ""} href={`?caso=${encodeURIComponent(c.head)}`}>
-                  <span className="mono">{c.head}</span>
-                  <span className="branch-title">{c.title}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </span>

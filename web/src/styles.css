@@ -108,6 +108,7 @@ button.pill-head:hover { background: var(--panel-2); }
 .boot-error h1 { font: 600 28px/1.2 var(--display); margin: 0 0 12px; }
 .boot-error p { font-size: 16px; line-height: 1.5; color: var(--text-2); margin: 0 0 12px; }
 .boot-error .boot-hint { color: var(--muted); margin-bottom: 24px; }
+.boot-error .boot-cmd { font: 15px/1.5 var(--mono); color: var(--text); padding: 12px 14px; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--radius); }
 
 .btn {
   border: 1px solid var(--line-2); background: var(--panel); border-radius: var(--radius-sm);
