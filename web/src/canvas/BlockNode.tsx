@@ -1,6 +1,6 @@
 import { Handle, Position, useStore, type NodeProps, type Node } from "@xyflow/react";
 import type { Block, RowChange } from "../../../src/shared/analysis";
-import type { Verdict } from "../store";
+import { VERDICT_MARK, type Verdict } from "../store";
 
 import { FAR_ZOOM, headerHeight, rowHeight } from "../layout";
 
@@ -82,9 +82,10 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
 
 function VerdictBadge({ verdict }: { verdict?: Verdict }) {
   if (!verdict) return null;
-  return verdict === "ok" ? (
-    <span className="badge badge-ok" title="Entendido">✓</span>
-  ) : (
-    <span className="badge badge-doubt" title="Con dudas">?</span>
+  const title = { ok: "Está bien", change: "Pedís un cambio", doubt: "Tenés dudas" }[verdict];
+  return (
+    <span className={`badge badge-${verdict}`} title={title}>
+      {VERDICT_MARK[verdict]}
+    </span>
   );
 }

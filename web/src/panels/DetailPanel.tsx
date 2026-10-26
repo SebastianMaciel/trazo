@@ -1,19 +1,21 @@
+import { useState } from "react";
 import type { Block, Decision, Example, HunkView } from "../../../src/shared/analysis";
-import type { DiffLine } from "../../../src/shared/diff";
 import { Code, useTokens } from "../highlight";
-import { useReview, useVisible } from "../store";
+import { HEADLINE, focusHunk, focusOf, stepOf, summarize, type Step } from "../review";
+import { VERDICT_MARK, useReview, useVisible, type Verdict } from "../store";
 
 export function DetailPanel() {
-  const { analysis, selected } = useReview();
+  const { analysis, selected, summary } = useReview();
   const block = analysis.blocks.find((b) => b.id === selected);
   const decision = analysis.decisions.find((d) => d.id === selected);
   return (
     <aside className="detail">
       {/* Arriba scrollea el contenido; los botones quedan siempre en el mismo lugar, abajo de todo */}
-      <div className="detail-scroll">
-        {block ? <BlockDetail block={block} /> : decision ? <DecisionDetail decision={decision} /> : <Overview />}
+      {/* Cada vista arranca arriba: no hereda el scroll de la anterior */}
+      <div className="detail-scroll" key={summary ? "resumen" : (selected ?? "inicio")}>
+        {block ? <BlockDetail block={block} /> : decision ? <DecisionDetail decision={decision} /> : summary ? <Summary /> : <Overview />}
       </div>
-      {block || decision ? <Stepper id={selected!} /> : <StartFoot />}
+      {block || decision ? <Stepper id={selected!} /> : summary ? <SummaryFoot /> : <StartFoot />}
     </aside>
   );
 }
@@ -101,7 +103,7 @@ function BlockDetail({ block }: { block: Block }) {
 
       {focusHunk(block.hunks) && <Snippet hunk={focusHunk(block.hunks)!} total={block.hunks.reduce((n, h) => n + h.lines.filter((l) => l.kind !== "ctx").length, 0)} />}
 
-      <Closing id={block.id} question="¿Te cierra este cambio?" />
+      <Closing id={block.id} question="¿Cómo está este cambio?" />
     </div>
   );
 }
@@ -135,25 +137,6 @@ function ExampleFlow({ ex }: { ex: Example }) {
 
 /** Los montos no se parten entre "$" y el número */
 const nb = (t: string) => t.replace(/\$ (?=[\d-])/g, "$\u00a0");
-
-/** Imports, comentarios y líneas vacías: no explican el cambio */
-const NOISE = /^\s*(import\b|export \* from|\/\/|\/\*|\*)|^\s*$/;
-const WARN = /\bojo:/i;
-const meaningful = (l: DiffLine) => l.kind !== "ctx" && !NOISE.test(l.text);
-
-/** Qué mostrar del hunk: la nota con "Ojo" si hay, si no la primera que toca código de verdad */
-function focusOf(h: HunkView) {
-  const notes = h.notes ?? [];
-  const note = notes.find((n) => WARN.test(n.text)) ?? notes.find((n) => h.lines.slice(n.from, n.to + 1).some(meaningful));
-  const span = note ? h.lines.slice(note.from, note.to + 1) : h.lines;
-  const lines = span.filter(meaningful);
-  return { lines: lines.length ? lines : span.filter((l) => l.kind !== "ctx"), note: note?.text, warn: !!note && WARN.test(note.text) };
-}
-
-/** De todos los hunks del bloque, el que tiene el aviso; si no, el primero con código que importe */
-function focusHunk(hunks: HunkView[]) {
-  return hunks.find((h) => h.notes?.some((n) => WARN.test(n.text))) ?? hunks.find((h) => h.lines.some(meaningful)) ?? hunks[0];
-}
 
 /** Las líneas que importan con su explicación. Un click abre el código completo en el panel de al lado */
 function Snippet({ hunk, total }: { hunk: HunkView; total: number }) {
@@ -233,28 +216,48 @@ function DecisionDetail({ decision: d }: { decision: Decision }) {
 
       {d.hunk && <Snippet hunk={d.hunk} total={d.hunk.lines.filter((l) => l.kind !== "ctx").length} />}
 
-      <Closing id={d.id} question="¿Te cierra esta condición?" />
+      <Closing id={d.id} question="¿Cómo está esta condición?" />
     </div>
   );
 }
 
+const OPTIONS: { v: Verdict; label: string }[] = [
+  { v: "ok", label: "Está bien" },
+  { v: "change", label: "Pedir cambio" },
+  { v: "doubt", label: "Tengo dudas" },
+];
+
 /** Cerrar un paso es una decisión explícita, separada de moverse por el recorrido */
 function Closing({ id, question }: { id: string; question: string }) {
-  const { verdicts, setVerdict } = useReview();
+  const { analysis, verdicts, setVerdict, notes, setNote } = useReview();
   const verdict = verdicts[id];
+  const pick = (v: Verdict) => {
+    // Al pedir un cambio sobre algo que la AI ya marcó, el aviso es el punto de partida del comentario
+    const warning = stepOf(analysis, id).warnings[0];
+    if (v === "change" && verdict !== "change" && !notes[id] && warning) setNote(id, warning);
+    setVerdict(id, v);
+  };
+  const writing = verdict === "change" || verdict === "doubt";
   return (
     <section className={`verdict ${verdict ? `is-${verdict}` : ""}`}>
       <p className="verdict-q">{question}</p>
       <div className="verdict-options">
-        <button className={`verdict-btn ok ${verdict === "ok" ? "is-on" : ""}`} onClick={() => setVerdict(id, "ok")} aria-pressed={verdict === "ok"}>
-          <span className="verdict-icon">✓</span>
-          Lo entendí
-        </button>
-        <button className={`verdict-btn doubt ${verdict === "doubt" ? "is-on" : ""}`} onClick={() => setVerdict(id, "doubt")} aria-pressed={verdict === "doubt"}>
-          <span className="verdict-icon">?</span>
-          Tengo dudas
-        </button>
+        {OPTIONS.map((o) => (
+          <button key={o.v} className={`verdict-btn ${o.v} ${verdict === o.v ? "is-on" : ""}`} onClick={() => pick(o.v)} aria-pressed={verdict === o.v}>
+            <span className="verdict-icon">{VERDICT_MARK[o.v]}</span>
+            {o.label}
+          </button>
+        ))}
       </div>
+      {writing && (
+        <textarea
+          className="verdict-note"
+          rows={3}
+          value={notes[id] ?? ""}
+          onChange={(e) => setNote(id, e.target.value)}
+          placeholder={verdict === "change" ? "Qué habría que cambiar" : "Qué no te cierra"}
+        />
+      )}
     </section>
   );
 }
@@ -264,6 +267,7 @@ function Stepper({ id }: { id: string }) {
   const { verdicts, tourStep } = useReview();
   const tour = useVisible().tour;
   const pos = tour.indexOf(id);
+  const last = pos === tour.length - 1;
   return (
     <nav className="stepper">
       {/* Una rayita por paso: dónde estás y cómo cerraste cada uno */}
@@ -277,9 +281,103 @@ function Stepper({ id }: { id: string }) {
           <kbd>←</kbd>
           Anterior
         </button>
-        <button className="btn" onClick={() => tourStep(1)} disabled={pos === tour.length - 1}>
-          Siguiente
+        <button className={`btn ${last ? "btn-primary" : ""}`} onClick={() => tourStep(1)}>
+          {last ? "Terminar" : "Siguiente"}
           <kbd>→</kbd>
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+/** El cierre: lo que pedís cambiar, tus dudas y un borrador listo para pegar en el PR */
+function Summary() {
+  const { analysis, verdicts, notes } = useReview();
+  const tour = useVisible().tour;
+  const r = summarize(analysis, tour, verdicts, notes);
+  return (
+    <div className="detail-inner">
+      <p className="eyebrow">Tu review</p>
+      <h1 className={`detail-title review-status is-${r.status}`}>{HEADLINE[r.status]}</h1>
+
+      <StepList title="Pedís cambios" tone="change" steps={r.changes} />
+      <StepList title="Tus dudas" tone="doubt" steps={r.doubts} />
+      <StepList title="La AI avisó algo y lo diste por bueno" tone="warn" steps={r.okWithWarnings} hint="Fijate que haya sido a conciencia" />
+      <div className="draft">
+        <p className="eyebrow">Borrador para el PR</p>
+        <pre>{r.draft}</pre>
+      </div>
+
+      {r.pending.length > 0 && <Pending steps={r.pending} />}
+    </div>
+  );
+}
+
+function StepList({ title, tone, steps, hint }: { title: string; tone: string; steps: (Step & { note?: string })[]; hint?: string }) {
+  const { select } = useReview();
+  if (!steps.length) return null;
+  return (
+    <section className={`review-list tone-${tone}`}>
+      <h2>
+        {title} <span className="review-count">{steps.length}</span>
+      </h2>
+      {hint && <p className="review-hint">{hint}</p>}
+      <ul>
+        {steps.map((s) => (
+          <li key={s.id}>
+            <button className="review-item" onClick={() => select(s.id)}>
+              <span className="review-title">{s.title}</span>
+              <span className="review-where">{s.where}</span>
+              {s.note ? <span className="review-note">{s.note}</span> : tone === "warn" && <span className="review-note">{s.warnings[0]}</span>}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Lo que falta, compacto: es para volver, no para leer */
+function Pending({ steps }: { steps: Step[] }) {
+  const { select } = useReview();
+  return (
+    <section className="review-list tone-pending">
+      <h2>
+        Te {steps.length === 1 ? "falta 1 paso" : `faltan ${steps.length} pasos`}
+      </h2>
+      <div className="pending">
+        {steps.map((s) => (
+          <button key={s.id} className="pending-chip" onClick={() => select(s.id)}>
+            {s.title}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SummaryFoot() {
+  const { analysis, verdicts, notes, tourStep } = useReview();
+  const tour = useVisible().tour;
+  const [copied, setCopied] = useState<"idle" | "ok" | "error">("idle");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(summarize(analysis, tour, verdicts, notes).draft);
+      setCopied("ok");
+    } catch {
+      setCopied("error");
+    }
+    setTimeout(() => setCopied("idle"), 2200);
+  };
+  return (
+    <nav className="stepper">
+      <div className="stepper-btns">
+        <button className="btn" onClick={() => tourStep(-1)}>
+          <kbd>←</kbd>
+          Volver
+        </button>
+        <button className="btn btn-primary" onClick={copy}>
+          {copied === "ok" ? "Copiado ✓" : copied === "error" ? "No se pudo copiar" : "Copiar borrador"}
         </button>
       </div>
     </nav>

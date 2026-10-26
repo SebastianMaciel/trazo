@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { layerOf, useReview, useVisible } from "../store";
+import { VERDICT_MARK, layerOf, useReview, useVisible } from "../store";
 
 export function Sidebar() {
   const { analysis: raw, selected, verdicts, select, show, toggleShow } = useReview();
@@ -35,7 +35,7 @@ export function Sidebar() {
                 {items.map((it) => (
                   <li key={it.id}>
                     <button className={`tree-item ${it.decision ? "is-decision" : ""} ${selected === it.id ? "is-selected" : ""}`} onClick={() => select(it.id)}>
-                      <span className={`tree-check ${verdicts[it.id] ? `is-${verdicts[it.id]}` : ""}`}>{verdicts[it.id] === "ok" ? "✓" : verdicts[it.id] === "doubt" ? "?" : ""}</span>
+                      <span className={`tree-check ${verdicts[it.id] ? `is-${verdicts[it.id]}` : ""}`}>{verdicts[it.id] ? VERDICT_MARK[verdicts[it.id]] : ""}</span>
                       {it.decision && <span className="tree-diamond">◇</span>}
                       <span className="tree-name">{it.title}</span>
                       {it.warn ? <span className="warn-dot">!</span> : null}

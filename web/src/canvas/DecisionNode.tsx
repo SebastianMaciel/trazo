@@ -1,7 +1,7 @@
 import { Handle, Position, useStore, type Node, type NodeProps } from "@xyflow/react";
 import type { Decision } from "../../../src/shared/analysis";
 import { outHandle } from "../graph";
-import type { Verdict } from "../store";
+import { VERDICT_MARK, type Verdict } from "../store";
 import { DECISION_H, DECISION_W, FAR_ZOOM, OUTCOME_SIDES } from "../layout";
 
 export type DecisionNodeData = { decision: Decision; selected: boolean; dimmed: boolean; step: string | null; verdict?: Verdict; start: string | null };
@@ -21,7 +21,7 @@ export function DecisionNode({ data }: NodeProps<Node<DecisionNodeData>>) {
         <polygon points={`${w / 2},2 ${w - 2},${h / 2} ${w / 2},${h - 2} 2,${h / 2}`} />
       </svg>
       {step && <span className="step decision-step">{step}</span>}
-      {verdict && <span className={`badge decision-badge badge-${verdict}`}>{verdict === "ok" ? "✓" : "?"}</span>}
+      {verdict && <span className={`badge decision-badge badge-${verdict}`}>{VERDICT_MARK[verdict]}</span>}
       {start && <span className="start-tag">{start}</span>}
       <div className="decision-text">{far ? "?" : d.condition}</div>
       {!far && d.status !== "igual" && <span className="decision-status">{STATUS_LABEL[d.status]}</span>}

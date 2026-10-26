@@ -12,7 +12,7 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "ArrowRight") tourStep(1);
       if (e.key === "ArrowLeft") tourStep(-1);
       // Escape cierra lo que esté abierto; para salir del recorrido está "Vista general"

@@ -4,8 +4,9 @@ import { currentCase } from "./mock";
 import { baseTour } from "./steps";
 
 export type Layer = "tests" | "minor";
-/** Cómo cerró el revisor cada bloque. Navegar no marca nada */
-export type Verdict = "ok" | "doubt";
+/** Cómo cerró el revisor cada paso. Navegar no marca nada */
+export type Verdict = "ok" | "change" | "doubt";
+export const VERDICT_MARK: Record<Verdict, string> = { ok: "✓", change: "✎\uFE0E", doubt: "?" };
 type Show = Record<Layer | "index", boolean>;
 
 /**
@@ -16,6 +17,12 @@ interface ReviewState {
   analysis: Analysis;
   selected: string | null;
   verdicts: Record<string, Verdict>;
+  /** Lo que escribió el revisor al pedir un cambio o marcar una duda */
+  notes: Record<string, string>;
+  setNote: (id: string, text: string) => void;
+  /** La pantalla final: lo que pedís cambiar, tus dudas y el borrador para el PR */
+  summary: boolean;
+  openSummary: () => void;
   show: Show;
   /** Orden del recorrido según el flujo dibujado (lo calcula el canvas después del layout) */
   tourOrder: string[];
@@ -35,8 +42,11 @@ interface ReviewState {
 const initial = currentCase();
 
 /** El paso en el que estás vive en la URL: recargar o compartir el link te deja en el mismo lugar */
+const SUMMARY = "resumen";
+
 function stepFromUrl(): string | null {
   const id = new URLSearchParams(location.search).get("paso");
+  if (id === SUMMARY) return null;
   return id && (initial.blocks.some((b) => b.id === id) || initial.decisions.some((d) => d.id === id)) ? id : null;
 }
 
@@ -95,7 +105,19 @@ export function visibleAnalysis(a: Analysis, show: Show, tourOrder: string[] = [
 export const useReview = create<ReviewState>((set, get) => ({
   analysis: initial,
   selected: stepFromUrl(),
+  summary: new URLSearchParams(location.search).get("paso") === SUMMARY,
   verdicts: load<Record<string, Verdict>>(`${BASE_KEY}:verdicts`, {}),
+  notes: load<Record<string, string>>(`${BASE_KEY}:notes`, {}),
+  setNote: (id, text) => {
+    const notes = { ...get().notes, [id]: text };
+    if (!text.trim()) delete notes[id];
+    set({ notes });
+    save(`${BASE_KEY}:notes`, notes);
+  },
+  openSummary: () => {
+    stepToUrl(SUMMARY);
+    set((s) => ({ selected: null, summary: true, codeOpen: false, flyTick: s.flyTick + 1 }));
+  },
   show: load(`trazo:show`, { tests: false, minor: false, index: false }),
   codeOpen: false,
   tourOrder: [],
@@ -109,7 +131,7 @@ export const useReview = create<ReviewState>((set, get) => ({
     const layer = block ? layerOf(analysis, block) : null;
     if (layer && !show[layer]) get().toggleShow(layer);
     stepToUrl(id);
-    set((s) => ({ selected: id, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
+    set((s) => ({ selected: id, summary: false, codeOpen: id ? s.codeOpen : false, flyTick: fly ? s.flyTick + 1 : s.flyTick }));
   },
   setVerdict: (id, v) => {
     const verdicts = { ...get().verdicts };
@@ -127,9 +149,12 @@ export const useReview = create<ReviewState>((set, get) => ({
     save(`trazo:show`, show);
   },
   tourStep: (dir) => {
-    const { analysis, show, selected, tourOrder } = get();
+    const { analysis, show, selected, tourOrder, summary } = get();
     const tour = visibleAnalysis(analysis, show, tourOrder).tour;
+    // Después del último paso viene el resumen; desde el resumen, atrás vuelve al último
+    if (summary) return void (dir === -1 && get().select(tour[tour.length - 1]));
     const i = selected ? tour.indexOf(selected) : -1;
+    if (dir === 1 && i === tour.length - 1) return get().openSummary();
     const next = Math.min(tour.length - 1, Math.max(0, i + dir));
     get().select(tour[i === -1 ? 0 : next]);
   },

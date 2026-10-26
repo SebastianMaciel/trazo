@@ -70,7 +70,12 @@ Caso de prueba: la rama `fix/redondeo-mezclado` del repo demo, que tiene una rot
 
 ## Backlog de UI
 
-- **"Tengo dudas" con texto:** un campito para escribir la duda. Junto con el bloque y su evidencia (archivo:línea) queda un comentario listo para mandarle al autor, o para publicar en el MR más adelante.
+- **La review se escribe sola en el MR:** cada "Pedir cambio" se publica como comentario en la línea exacta de GitHub/GitLab. Al final, "Publicar review (3 comentarios, pide cambios)". Hoy el borrador se copia a mano.
+- **Modo 3 minutos:** para el dev quemado, solo los pasos con aviso o cambio de comportamiento. El resto se da por visto con un click.
+- **Dato vivo:** en "Qué pasa con un dato real", cambiar el input y correrlo contra la versión vieja y la nueva.
+- **Avisos cruzados con tests:** decir pegado al bloque si algún test cubre el aviso ("ningún test prueba el día exacto del vencimiento").
+- **Recorrido por pregunta:** "¿qué pasa si mando dos cupones?" y el mapa ilumina ese camino de punta a punta.
+- **Gravedad de los avisos:** distinguir "rompe en prod" de "detalle de copy". Hoy todos llevan el mismo "!".
 
 ## Decisiones
 

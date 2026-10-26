@@ -63,7 +63,7 @@ export function Canvas() {
         selectable: false,
         draggable: false,
         zIndex: 0,
-        data: { group: g, n: analysis.groups.indexOf(g) + 1, done: ids.filter((id) => verdicts[id] === "ok").length, total: ids.length, warns: analysis.blocks.filter((b) => b.group === g.id && b.warnings?.length).length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
+        data: { group: g, n: analysis.groups.indexOf(g) + 1, done: ids.filter((id) => verdicts[id]).length, total: ids.length, warns: analysis.blocks.filter((b) => b.group === g.id && b.warnings?.length).length, dimmed: !!selected && !ids.some((id) => focus.has(id)) },
       };
     });
     const blocks: Node<BlockNodeData>[] = analysis.blocks.filter((b) => layout.nodes[b.id]).map((b) => {

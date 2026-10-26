@@ -4,10 +4,13 @@ import { ThemePicker } from "./ThemePicker";
 import { useReview, useVisible } from "../store";
 
 export function TopBar() {
-  const { analysis, selected, verdicts, show, select, toggleShow } = useReview();
+  const { analysis, selected, summary, verdicts, show, select, toggleShow, openSummary } = useReview();
   const visible = useVisible();
-  const ok = visible.tour.filter((id) => verdicts[id] === "ok").length;
-  const doubts = visible.tour.filter((id) => verdicts[id] === "doubt").length;
+  const count = (v: string) => visible.tour.filter((id) => verdicts[id] === v).length;
+  const ok = count("ok");
+  const changes = count("change");
+  const doubts = count("doubt");
+  const done = ok + changes + doubts;
   const total = Math.max(1, visible.tour.length);
 
   return (
@@ -20,18 +23,21 @@ export function TopBar() {
         <BranchPicker head={analysis.head} />
       </span>
 
-      <div className="topbar-progress">
+      {/* El progreso lleva a tu review: lo que llevás marcado y el borrador */}
+      <button className={`topbar-progress ${summary ? "is-on" : ""}`} onClick={openSummary}>
         <span>
-          <strong>{ok}</strong> de {visible.tour.length} entendidos
-          {doubts > 0 && <span className="doubts"> · {doubts} con dudas</span>}
+          <strong>{done}</strong> de {visible.tour.length} revisados
+          {changes > 0 && <span className="n-change"> · {changes} {changes === 1 ? "cambio" : "cambios"}</span>}
+          {doubts > 0 && <span className="doubts"> · {doubts} {doubts === 1 ? "duda" : "dudas"}</span>}
         </span>
         <div className="progress-bar">
           <div className="pb-ok" style={{ width: `${(ok / total) * 100}%` }} />
+          <div className="pb-change" style={{ width: `${(changes / total) * 100}%` }} />
           <div className="pb-doubt" style={{ width: `${(doubts / total) * 100}%` }} />
         </div>
-      </div>
+      </button>
 
-      <button className="btn" onClick={() => select(null)} disabled={!selected}>
+      <button className="btn" onClick={() => select(null)} disabled={!selected && !summary}>
         Vista general
       </button>
       <ThemePicker />
