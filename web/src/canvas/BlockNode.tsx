@@ -21,6 +21,7 @@ const KIND_LABEL: Record<Block["kind"], string> = {
   componente: "componente",
   tipo: "tipo",
   config: "config",
+  migración: "migración",
   test: "test",
   copy: "texto",
 };

@@ -7,6 +7,8 @@ import type { Block, Context, Decision, Edge, Group, LineNote } from "./analysis
  */
 export interface DraftHunk {
   id: string;
+  /** Solo un pedazo del hunk, [desde, hasta] inclusive, cuando el hunk toca varias funciones */
+  lines?: [number, number];
   notes?: LineNote[];
 }
 

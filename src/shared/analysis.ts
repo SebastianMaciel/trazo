@@ -1,6 +1,6 @@
 import type { DiffLine } from "./diff.js";
 
-export type BlockKind = "endpoint" | "función" | "componente" | "tipo" | "config" | "test" | "copy";
+export type BlockKind = "endpoint" | "función" | "componente" | "tipo" | "config" | "migración" | "test" | "copy";
 /** affected = no cambió ninguna línea, pero le llegan datos distintos */
 export type RowChange = "added" | "modified" | "deleted" | "affected";
 export type EdgeKind = "llama" | "importa" | "usa-tipo" | "datos" | "testea";

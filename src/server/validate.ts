@@ -3,7 +3,7 @@ import { filePath, type DiffResult } from "../shared/diff.js";
 import type { Draft } from "../shared/draft.js";
 import { numberHunks } from "./numbered.js";
 
-const KINDS = ["endpoint", "función", "componente", "tipo", "config", "test", "copy"];
+const KINDS = ["endpoint", "función", "componente", "tipo", "config", "migración", "test", "copy"];
 const ROW_CHANGES = ["added", "modified", "deleted", "affected"];
 const EDGE_KINDS = ["llama", "importa", "usa-tipo", "datos", "testea"];
 const DECISION_STATUS = ["nueva", "cambió", "igual"];
@@ -84,12 +84,14 @@ export async function validateDraft(raw: unknown, diff: DiffResult, repo: string
     str(v, "summary", path);
   }
 
-  // Hunks del diff y quién los usa
+  // Hunks del diff y de qué bloque es cada línea cambiada
   const numbered = numberHunks(diff);
   const byId = new Map(numbered.map((h) => [h.id, h]));
-  const owner = new Map<string, string>();
+  const owner = new Map(numbered.map((h) => [h.id, h.hunk.lines.map(() => "")]));
+  const isRange = (a: unknown, b: unknown, max: number) => Number.isInteger(a) && Number.isInteger(b) && (a as number) >= 0 && (b as number) <= max && (a as number) <= (b as number);
 
-  const hunkView = (h: unknown, path: string): HunkView | null => {
+  /** Un hunk entero, o un pedazo con lines: [desde, hasta] cuando el hunk toca varias funciones */
+  const hunkView = (h: unknown, path: string): { view: HunkView; id: string; from: number; to: number } | null => {
     if (!isObj(h)) {
       err(path, 'tiene que ser { id: "h3", notes: [...] }');
       return null;
@@ -100,17 +102,26 @@ export async function validateDraft(raw: unknown, diff: DiffResult, repo: string
       if (id) err(`${path}.id`, `no existe el hunk "${id}" en el diff (van de h1 a h${numbered.length})`);
       return null;
     }
-    const max = n.hunk.lines.length - 1;
+    const last = n.hunk.lines.length - 1;
+    let [from, to] = [0, last];
+    if (h.lines !== undefined) {
+      const r = h.lines;
+      if (!Array.isArray(r) || r.length !== 2 || !isRange(r[0], r[1], last)) {
+        err(`${path}.lines`, `tiene que ser [desde, hasta] con índices del hunk ${id}, entre 0 y ${last}`);
+        return null;
+      }
+      [from, to] = r as [number, number];
+    }
+    // Las notas usan los índices del diff numerado; adentro del pedazo se corren
     const notes = objs(h, "notes", path, false).flatMap(({ v, path: np }) => {
-      const { from, to } = v;
       const text = str(v, "text", np);
-      if (!Number.isInteger(from) || !Number.isInteger(to) || (from as number) < 0 || (to as number) > max || (from as number) > (to as number)) {
-        err(np, `from y to son índices de línea del hunk ${id}, entre 0 y ${max}, con from ≤ to`);
+      if (!isRange(v.from, v.to, last) || (v.from as number) < from || (v.to as number) > to) {
+        err(np, `from y to son índices de línea del hunk ${id}, entre ${from} y ${to}, con from ≤ to`);
         return [];
       }
-      return [{ from: from as number, to: to as number, text }];
+      return [{ from: (v.from as number) - from, to: (v.to as number) - from, text }];
     });
-    return { file: filePath(n.file), section: n.hunk.section, lines: n.hunk.lines, notes };
+    return { view: { file: filePath(n.file), section: n.hunk.section, lines: n.hunk.lines.slice(from, to + 1), notes }, id, from, to };
   };
 
   // Bloques
@@ -132,13 +143,18 @@ export async function validateDraft(raw: unknown, diff: DiffResult, repo: string
     if (!rows.length) err(`${path}.rows`, "un bloque necesita al menos una fila: de ahí salen las flechas");
     const hunks = list(v, "hunks", path).flatMap((h, i) => {
       const hv = hunkView(h, `${path}.hunks[${i}]`);
-      const hid = isObj(h) ? String(h.id) : "";
-      if (hv) {
-        const prev = owner.get(hid);
-        if (prev && prev !== id) err(`${path}.hunks[${i}]`, `el hunk ${hid} ya está en el bloque "${prev}": cada hunk va en un solo bloque`);
-        owner.set(hid, id);
+      if (!hv) return [];
+      // Cada línea cambiada, en un solo bloque. El contexto puede repetirse
+      const lines = byId.get(hv.id)!.hunk.lines;
+      const taken = owner.get(hv.id)!;
+      const clash = new Set<string>();
+      for (let k = hv.from; k <= hv.to; k++) {
+        if (lines[k].kind === "ctx") continue;
+        if (taken[k] && taken[k] !== id) clash.add(taken[k]);
+        taken[k] = id;
       }
-      return hv ? [hv] : [];
+      for (const other of clash) err(`${path}.hunks[${i}]`, `líneas cambiadas del hunk ${hv.id} ya están en el bloque "${other}": cada línea va en un solo bloque (si el hunk toca varias funciones, partilo con lines)`);
+      return [hv.view];
     });
     const warnings = list(v, "warnings", path, false).filter((w, i) => typeof w === "string" || (err(`${path}.warnings[${i}]`, "tiene que ser un texto"), false)) as string[];
     blocks.push({
@@ -157,9 +173,13 @@ export async function validateDraft(raw: unknown, diff: DiffResult, repo: string
   }
 
   // Ningún código puede quedar afuera del review
-  const orphans = numbered.filter((h) => !owner.has(h.id));
-  if (orphans.length)
-    err("blocks", `estos hunks no están en ningún bloque: ${orphans.map((h) => `${h.id} (${filePath(h.file)})`).join(", ")}. Si son menores, van en un bloque de un grupo con minor: true`);
+  const orphans = numbered.flatMap((h) => {
+    const taken = owner.get(h.id)!;
+    const free = h.hunk.lines.flatMap((l, k) => (l.kind !== "ctx" && !taken[k] ? [k] : []));
+    if (!free.length) return [];
+    return [free.length === h.hunk.lines.filter((l) => l.kind !== "ctx").length ? `${h.id} (${filePath(h.file)})` : `${h.id} líneas ${free.join(", ")} (${filePath(h.file)})`];
+  });
+  if (orphans.length) err("blocks", `esto no está en ningún bloque: ${orphans.join("; ")}. Si es menor, va en un bloque de un grupo con minor: true`);
 
   const blockById = new Map(blocks.map((b) => [b.id, b]));
   const rowOf = (blockId: string, rowId: unknown, path: string, what: string) => {
@@ -232,7 +252,8 @@ export async function validateDraft(raw: unknown, diff: DiffResult, repo: string
       if (outcome && !outIds.has(outcome)) err(`${cp}.outcome`, `tiene que ser el id de una salida (${[...outIds].join(", ")})`);
       return { input: str(c, "input", cp), outcome, ...(c.before ? { before: str(c, "before", cp, false) } : {}), ...(c.warning ? { warning: str(c, "warning", cp, false) } : {}) };
     });
-    const hunk = v.hunk === undefined ? undefined : hunkView(v.hunk, `${path}.hunk`);
+    // El rombo puede mostrar un hunk que ya está en un bloque: no cuenta para la cobertura
+    const hunk = v.hunk === undefined ? undefined : hunkView(v.hunk, `${path}.hunk`)?.view;
     return {
       id,
       from,

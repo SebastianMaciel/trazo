@@ -37,7 +37,9 @@ Si `T/node_modules` no existe, `pnpm --dir T install`. Si `T/dist/web` no existe
    Si el remoto pide credenciales y tenés token, pasalo solo para ese comando: `git -C R -c http.extraHeader="Authorization: Basic <base64 de oauth2:TOKEN>" fetch ...`. Si el remoto es SSH, no hace falta.
    Si te pidieron una rama en vez de un MR: `git -C R fetch origin <rama>` y usá `origin/<rama>`.
 
-La descripción del MR y el ticket que mencione (Jira u otro) son la mejor fuente para "cómo debería andar". Si hay un link a Jira y tenés acceso, leelo.
+**Rama local o repo sin remoto**: usá las ramas tal cual (`main`, `fix/x`), sin fetch.
+
+La descripción del MR y el ticket que mencione (Jira u otro) son la mejor fuente para "cómo debería andar". Si hay un link a Jira y tenés acceso, leelo. Si no hay MR ni ticket, sacalo de los mensajes de los commits (`git -C R log --format=%B <base>..<head>`) y decilo en `goal`.
 
 ## 3. Sacar el diff numerado
 
@@ -45,7 +47,7 @@ La descripción del MR y el ticket que mencione (Jira u otro) son la mejor fuent
 pnpm --silent --dir T trazo diff R <sha-base> <sha-head> --out <tmp>/diff.txt
 ```
 
-Imprime los shas completos de base y head: son los que van en el análisis. Leé el archivo entero (en partes si es largo). Cada hunk tiene un id (`[h7]`) y cada línea su índice dentro del hunk, su número viejo y su número nuevo:
+Como base pasá la rama destino tal cual: trazo calcula solo el merge-base, como GitLab, así no aparecen cambios que entraron a la base después. Imprime los shas completos de base y head: son los que van en `base` y `head` del análisis. Leé el archivo entero (en partes si es largo). Cada hunk tiene un id (`[h7]`) y cada línea su índice dentro del hunk, su número viejo y su número nuevo:
 
 ```
 [h7] @@ -24,6 +24,8 @@ export function cartTotals
@@ -62,6 +64,10 @@ No te quedes con el diff: leé el código de alrededor en el head (`git -C R sho
 - Por dónde viaja el dato: de qué función sale, en qué `if` se decide el camino, dónde termina.
 - Qué puede romper: un borde (`<` vs `<=`, el último día, cero, vacío), una migración con datos viejos, algo que el ticket no pidió.
 
+En zsh, si el sha está en una variable, usá llaves: `git -C R show "${HEAD_SHA}:src/x.ts"`. Sin llaves, `$HEAD_SHA:s...` se rompe.
+
+No hace falta correr los tests del repo: para eso habría que instalarlo, y el repo no se toca. Si un número importa, calculalo aparte (por ejemplo con `node -e`).
+
 ## 5. Escribir el análisis
 
 Un JSON en `<tmp>/analisis.json`. Todo el texto, en español rioplatense, claro y corto.
@@ -73,7 +79,7 @@ Un JSON en `<tmp>/analisis.json`. Todo el texto, en español rioplatense, claro 
   "base": "<sha completo de la base>",
   "head": "<sha completo del head>",
   "baseLabel": "develop",                         // cómo mostrar la base
-  "headLabel": "!123 feature/cupones",            // y el head: el MR y su rama
+  "headLabel": "!123 feature/cupones",            // y el head: el MR y su rama (sin MR, solo la rama)
   "title": "Un solo cupón por compra, descontado antes del IVA",
   "context": {
     "before": "Cómo andaba antes, en una o dos frases.",
@@ -126,17 +132,17 @@ Un JSON en `<tmp>/analisis.json`. Todo el texto, en español rioplatense, claro 
 
 **groups**: de 3 a 7, por comportamiento, nunca por carpeta. El título dice qué cambia en palabras de negocio ("El descuento va antes del IVA"), no nombres de archivo. Van en el orden en que conviene contar la historia: la entrada, la lógica, lo que sale, lo que se guarda y al final los tests. Lo trivial (formato, renombres, textos) va en un grupo con `"minor": true`.
 
-**blocks**: una unidad que cambió (función, componente, tipo, config, migración, test). `title` es el nombre del símbolo (`cartTotals`) o del archivo si no hay símbolo. `kind`: `endpoint`, `función`, `componente`, `tipo`, `config`, `test` o `copy`. `summary` dice el efecto, no repite el código.
-- **Todo hunk va en exactamente un bloque.** Si un hunk toca dos funciones, va en la que más importa.
+**blocks**: una unidad que cambió (función, componente, tipo, config, migración, test). `title` es el nombre del símbolo (`cartTotals`) o del archivo si no hay símbolo. `kind`: `endpoint`, `función`, `componente`, `tipo`, `config`, `migración`, `test` o `copy`. `summary` dice el efecto, no repite el código.
+- **Cada línea cambiada va en exactamente un bloque.** Si un hunk toca varias funciones, partilo por líneas con `lines` (índices del diff numerado, inclusive) y que cada función tenga su bloque: `{ "id": "h12", "lines": [0, 14] }` en uno y `{ "id": "h12", "lines": [15, 40] }` en otro. Las líneas de contexto pueden repetirse; las cambiadas, no. Las notas siguen usando los índices del diff numerado.
 - **rows**: cada cosa que cambió adentro del bloque, en palabras (`"descuento sobre el neto"`, no `"discount = net * pct"`). `change`: `added`, `modified` (con `before`: lo de antes), `deleted` o `affected`.
 - **affected**: una línea que no cambió pero de la que sale o a la que llega una flecha (por ejemplo, la llamada a una función que sí cambió). Si un bloque entero no cambió pero lo afecta el cambio, va con `"affected": true` y sus filas `affected`.
 - **warnings**: solo riesgos reales y con el caso que rompe ("con dos cupones iguales, la migración falla"). Mejor ninguno que uno vago. Una frase cada uno.
 
 **notes** (en cada hunk): explican rangos de líneas (`from` y `to` son los índices del diff numerado). Dicen el efecto en una o dos frases, sin repetir el código. Si hay un riesgo, la nota empieza con **"Ojo:"** y trazo la pinta en rojo. Todo hunk que no sea trivial lleva al menos una nota sobre sus líneas importantes.
 
-**edges**: cómo se conectan los bloques. `kind`: `llama`, `importa`, `usa-tipo`, `datos` o `testea` (del test al código que prueba). `label` dice qué viaja, corto ("subtotal sin IVA"). **`fromRow` es obligatorio**: la fila de donde sale. Si la relación está en una línea que no cambió, sumale al bloque una fila `affected` para esa línea. `evidence`: `ruta/desde/la/raíz:línea` donde se ve la relación, en el head (o en la base si ya no existe).
+**edges**: cómo se conectan los bloques. Van en el sentido en que se lee el flujo: `llama` de quien llama a quien es llamado, `datos` de quien produce el dato a quien lo usa, `importa` y `usa-tipo` de lo importado (o el tipo) a quien lo usa, y `testea` del test al código que prueba. `label` dice qué viaja, corto ("subtotal sin IVA"). **`fromRow` es obligatorio**: la fila de donde sale. Si la relación está en una línea que no cambió, sumale al bloque una fila `affected` para esa línea. `evidence`: `ruta/desde/la/raíz:línea` donde se ve la relación, en el head (o en la base si ya no existe).
 
-**decisions** (rombos): los `if` que deciden a dónde va el dato y que son nuevos, cambiaron o importan para entender el cambio. No todos los `if`. `condition` como pregunta ("¿Llega al monto mínimo?"). La primera salida es el camino feliz. Una salida va a un bloque (`to`) o termina (`end` con `tone` `error` u `ok`). `cases`: datos concretos y por qué salida se van; `before` si antes se iba por otro lado, `warning` si hay algo para saber.
+**decisions** (rombos): los `if` que deciden a dónde va el dato y que son nuevos, cambiaron o importan para entender el cambio. No todos los `if`. `condition` como pregunta ("¿Llega al monto mínimo?"). La primera salida es el camino feliz. Una salida va a un bloque (`to`) o termina (`end` con `tone` `error` u `ok`). `cases`: datos concretos y por qué salida se van; `before` si antes se iba por otro lado, `warning` si hay algo para saber. `hunk` (opcional) muestra el código del `if`: puede ser un hunk, o un pedazo con `lines`, que ya está en un bloque, y no cuenta para la cobertura.
 
 **tour**: todos los bloques, en el orden en que conviene leerlos. Los rombos se ubican solos después de su bloque.
 
@@ -158,7 +164,7 @@ Si hay problemas, los lista todos con su ruta (`blocks[3].rows: ...`). Corregilo
 
 ## 7. Abrir
 
-Levantá el server de fondo, que si ya está corriendo no hace nada, y abrí el análisis:
+Levantá el server de fondo, que si ya está corriendo no hace nada, y abrí el análisis. "De fondo" es con lo que tenga tu entorno para eso (en Claude Code, correr el comando en segundo plano). Si no tenés nada, en macOS y Linux agregale `&` al final, y en Windows anteponele `start /b`.
 
 ```
 pnpm --silent --dir T trazo serve --no-open      # de fondo

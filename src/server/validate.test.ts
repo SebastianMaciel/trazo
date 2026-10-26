@@ -64,7 +64,28 @@ describe("validateDraft", () => {
     d.blocks[1].hunks = [{ id: "h1" }];
     const { errors } = await validateDraft(d, diff, "demo", lines);
     expect(errors.join("\n")).toMatch(/h2 \(src\/tax.ts\)/);
-    expect(errors.join("\n")).toMatch(/ya está en el bloque "cart"/);
+    expect(errors.join("\n")).toMatch(/ya están en el bloque "cart"/);
+  });
+
+  it("un hunk que toca dos funciones se reparte entre bloques por líneas, y ninguna cambiada queda afuera", async () => {
+    const d = draft();
+    // h1: 0 contexto, 1 borrada, 2 agregada, 3 contexto. La borrada a cart, la agregada a tax
+    d.blocks[0].hunks = [{ id: "h1", lines: [0, 1], notes: [{ from: 1, to: 1, text: "se va b = 2" }] } as never];
+    d.blocks[1].hunks = [{ id: "h2" }, { id: "h1", lines: [2, 3], notes: [{ from: 2, to: 2, text: "llega b = 3" }] } as never];
+    const ok = await validateDraft(d, diff, "demo", lines);
+    expect(ok.errors).toEqual([]);
+    const tax = ok.analysis!.blocks[1].hunks[1];
+    expect(tax.lines.map((l) => l.text)).toEqual(["const b = 3;", "const c = 4;"]);
+    // Las notas quedan relativas al pedazo
+    expect(tax.notes).toEqual([{ from: 0, to: 0, text: "llega b = 3" }]);
+
+    d.blocks[1].hunks = [{ id: "h2" }];
+    const orphan = await validateDraft(d, diff, "demo", lines);
+    expect(orphan.errors.join("\n")).toMatch(/h1 líneas 2 \(src\/cart.ts\)/);
+
+    d.blocks[1].hunks = [{ id: "h2" }, { id: "h1", lines: [1, 3] } as never];
+    const clash = await validateDraft(d, diff, "demo", lines);
+    expect(clash.errors.join("\n")).toMatch(/hunk h1 ya están en el bloque "cart"/);
   });
 
   it("rechaza hunks inventados y notas fuera del hunk", async () => {
