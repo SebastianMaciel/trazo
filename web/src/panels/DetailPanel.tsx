@@ -58,7 +58,7 @@ function BlockDetail({ block }: { block: Block }) {
   return (
     <div className="detail-inner" key={block.id}>
       <p className="eyebrow">
-        {block.file} · <span className={`risk-tag risk-${block.risk}`}>riesgo {block.risk}</span>
+        {block.file}
       </p>
       <h1 className="detail-title mono">{block.title}</h1>
       <p className="lead">{block.summary}</p>

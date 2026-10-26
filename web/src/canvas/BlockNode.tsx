@@ -31,7 +31,7 @@ export function BlockNode({ data }: NodeProps<Node<BlockNodeData>>) {
   const { block, step, start, selected, dimmed, verdict } = data;
   const far = useStore((s) => s.transform[2] < FAR_ZOOM);
 
-  const cls = ["block", far && "is-far", start && "is-start", `risk-${block.risk}`, selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
+  const cls = ["block", far && "is-far", start && "is-start", selected && "is-selected", dimmed && "is-dimmed", verdict && `is-${verdict}`, block.affected && "is-affected"]
     .filter(Boolean)
     .join(" ");
 

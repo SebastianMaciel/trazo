@@ -212,10 +212,6 @@ code, .mono, .line, .snippet { font-variant-ligatures: none; }
 .detail-title { margin: 0 0 14px; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
 .detail-title.mono { font-family: var(--mono); font-size: 24px; }
 .lead { margin: 0 0 24px; line-height: 1.6; font-size: 15px; color: #cfd7ea; }
-.risk-tag { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px; }
-.risk-tag.risk-alto { background: var(--del-bg); color: var(--risk-alto); }
-.risk-tag.risk-medio { background: var(--mod-bg); color: var(--risk-medio); }
-.risk-tag.risk-bajo { background: var(--add-bg); color: var(--risk-bajo); }
 
 .overview { list-style: none; padding: 0; margin: 14px 0 24px; display: grid; gap: 10px; }
 .overview li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: #cfd7ea; }
